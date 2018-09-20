@@ -6,7 +6,7 @@ import argparse
 import ast
 import fnmatch
 import matplotlib
-# matplotlib.use('Agg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
@@ -128,7 +128,51 @@ def plot_data(data, epochs_dict, plot_index, experiment_title, experiment_title2
     plt.legend(loc="upper left")
     if save:
         plt.savefig(os.path.join(save_dir, 'multitrial_barchart_%s%s_%s' % (experiment_title.replace("_","").replace(" ","").replace(",",""), experiment_title2.replace("_","").replace(" ","").replace(",",""), info_type.replace(" ",""))), bbox_inches="tight")
-    plt.show()
+    # plt.show()
+    plt.close()
+
+def plot_data_double(data0, data1, label0, label1, epochs_dict, experiment_title, experiment_title2, chance_rate, save=False, save_dir=None, savename="both"):
+    """Generates a bar chart of overall accuracy.
+
+    Args:
+        data: {architecture:(train_epochs, results)} dictionary where results follows the conventions in run_experiment.py.
+        epochs_dict: {architecture:epoch} dictionary of number of training epochs at which to get result for each architecture.
+        experiment_title: Name of the experiment, which is used to title the plot.
+        experiment_title2: Name of title, which is used in the second line of the plot.
+        chance_rate: Chance accuracy rate.
+        save, save_dir: If save=True, saves the plot to save_dir folder.
+    """
+    width = 0.35
+    xaxis_label = ["RNN\n%d epochs" % (epochs_dict["RNN-LN"]), "LSTM\n%d epochs" % (epochs_dict["LSTM-LN"]), "Fast Weights\n%d epochs" % (epochs_dict["RNN-LN-FW"]), "Reduced NTM\n%d epochs" % (epochs_dict["NTM2"])]
+    ind = np.arange(len(xaxis_label))
+    bar_values0 = []
+    bar_mins0 = []
+    bar_maxs0 = []
+    for architecture in architectures:
+        bar_mean0 = np.mean(data0[architecture])
+        bar_values0.append(bar_mean0)
+        bar_mins0.append(bar_mean0 - np.min(data0[architecture]))
+        bar_maxs0.append(np.max(data0[architecture]) - bar_mean0)
+    plt.bar(ind, bar_values0, width, color='#88b5ce', yerr=(bar_mins0, bar_maxs0), label=label0)
+    bar_values1 = []
+    bar_mins1 = []
+    bar_maxs1 = []
+    for architecture in architectures:
+        bar_mean1 = np.mean(data1[architecture])
+        bar_values1.append(bar_mean1)
+        bar_mins1.append(bar_mean1 - np.min(data1[architecture]))
+        bar_maxs1.append(np.max(data1[architecture]) - bar_mean1)
+    plt.bar(ind+width, bar_values1, width, color='#0082c8', yerr=(bar_mins1, bar_maxs1), label=label1)
+    plt.axhline(y=chance_rate, label="Chance Rate", color='k', linestyle='--')
+    plt.xticks(ind+width/2, xaxis_label)
+    plt.ylabel("Accuracy", fontsize=AXES_FONTSIZE)
+    plt.ylim([-0.01, 1.01])
+    plt.xlim([-0.25, 3.75])
+    plt.title(" %s\n%s" % (experiment_title, experiment_title2), fontsize=TITLE_FONTSIZE)
+    legend = plt.legend(ncol=3, bbox_to_anchor=(1.1, -0.1))
+    if save:
+        plt.savefig(os.path.join(save_dir, 'multitrial_barchart_%s%s_%s' % (experiment_title.replace("_","").replace(" ","").replace(",",""), experiment_title2.replace("_","").replace(" ","").replace(",",""), savename)), bbox_extra_artists=(legend,), bbox_inches="tight")
+    # plt.show()
     plt.close()
 
 def plot_split_data(data, epochs_dict, plot_index, experiment_title, experiment_title2, chance_rate, split_queries, save=False, save_dir=None):
@@ -148,7 +192,7 @@ def plot_split_data(data, epochs_dict, plot_index, experiment_title, experiment_
     # query_colors = {"QDessert":"#72C1F3","QDrink":"#1498EB","QEmcee":"#0E67A0","QFriend":"#0A4C76","QPoet":"#062A42","QSubject":"#050a30"}
     query_colors = {"QDessert":"#1f77b4", "QDrink":"#ff7f0e", "QEmcee":"#2ca02c", "QFriend":"#d62728", "QPoet":"#9467bd", "QSubject":"#8c564b"}
     info_type = "%s Accuracy" % info_type_words[plot_index]
-    width = 0.35
+    width = 0.3
     split_width = width/len(split_queries)
     xaxis_label = ["RNN\n%d epochs" % (epochs_dict["RNN-LN"]), "LSTM\n%d epochs" % (epochs_dict["LSTM-LN"]), "Fast Weights\n%d epochs" % (epochs_dict["RNN-LN-FW"]), "Reduced NTM\n%d epochs" % (epochs_dict["NTM2"])]
     xaxis_length = len(xaxis_label)
@@ -172,9 +216,9 @@ def plot_split_data(data, epochs_dict, plot_index, experiment_title, experiment_
     plt.ylim([-0.01, 1.01])
     plt.legend(loc="upper left")
     plt.title("%s\n%s" % (experiment_title, experiment_title2), fontsize=TITLE_FONTSIZE)
+    # plt.show()
     if save:
         plt.savefig(os.path.join(save_dir, 'multitrial_barchart_%s%s_%s_split' % (experiment_title.replace("_","").replace(" ","").replace(",",""), experiment_title2.replace("_","").replace(" ","").replace(",",""), info_type.replace(" ",""))), bbox_inches="tight")
-    plt.show()
     plt.close()
 
 if __name__ == '__main__':
@@ -189,6 +233,7 @@ if __name__ == '__main__':
     parser.add_argument('--chance_rate', help='Chance accuracy rate.', type=float, required=True)
     parser.add_argument('--epochs_dict', help='Dictionary of epochs to plot.', required=True)
     parser.add_argument('--plot_style', help='Type of plot', choices=['traintest_separate', 'traintest_together'], default='traintest_separate')
+    parser.add_argument('--plot_traintest_together', help='True if train and test results in same plot', choices=['True', 'False'], default='False')
     args=parser.parse_args()
 
     experiment_folder = args.exp_folder
@@ -202,27 +247,30 @@ if __name__ == '__main__':
     epochs_dict = ast.literal_eval(args.epochs_dict)
     results_dir = os.path.join(base_dir, "results", experiment_folder)
     save_dir = os.path.join(base_dir, "figures")
+    plot_traintest_together = args.plot_traintest_together == 'True'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     print(trial_nums)
     SPLIT_TEMPLATE = "%s_results_%depochs_trial%d_split.p"
     COMBINED_TEMPLATE = "%s_results_%depochs_trial%d.p"
 
-    # Plot train and test accuracy together.
-    # data0 = get_data(results_dir, COMBINED_TEMPLATE, trial_num)
-    # data1 = get_data(results_dir.replace("1_AllQs", "1_testunseen_AllQs"), COMBINED_TEMPLATE, trial_num)
-    # data = {}
-    # for architecture in architectures:
-    #     data[architecture] = [[None],[data0[architecture][1][1], data1[architecture][1][1]]]
-    # plot_data_double(data, 0, 1, "Shared Filler Pool", "Distinct Filler Pools", epochs_dict, experiment_title, experiment_title2, chance_rate, save, save_dir, "exp1exp2")
-
-    # Plot train and test accuracy separately.
-    plot_index = 0
-    data = get_data(results_dir, COMBINED_TEMPLATE, trial_nums, epochs_dict, plot_index)
-    plot_data(data, epochs_dict, plot_index, experiment_title, experiment_title2, chance_rate, save, save_dir)
-    plot_index = 1
-    data = get_data(results_dir, COMBINED_TEMPLATE, trial_nums, epochs_dict, plot_index)
-    plot_data(data, epochs_dict, plot_index, experiment_title, experiment_title2, chance_rate, save, save_dir)
+    if plot_traintest_together:
+        # Plot train and test accuracy together.
+        plot_index = 0
+        data0 = get_data(results_dir, COMBINED_TEMPLATE, trial_nums, epochs_dict, plot_index)
+        plot_index = 1
+        data1 = get_data(results_dir, COMBINED_TEMPLATE, trial_nums, epochs_dict, plot_index)
+        label0 = "Previously Seen Fillers"
+        label1 = "Previously Unseen Fillers"
+        plot_data_double(data0, data1, label0, label1, epochs_dict, experiment_title, experiment_title2, chance_rate, save, save_dir, savename="trainandtest")
+    else:
+        # Plot train and test accuracy separately.
+        plot_index = 0
+        data = get_data(results_dir, COMBINED_TEMPLATE, trial_nums, epochs_dict, plot_index)
+        plot_data(data, epochs_dict, plot_index, experiment_title, experiment_title2, chance_rate, save, save_dir)
+        plot_index = 1
+        data = get_data(results_dir, COMBINED_TEMPLATE, trial_nums, epochs_dict, plot_index)
+        plot_data(data, epochs_dict, plot_index, experiment_title, experiment_title2, chance_rate, save, save_dir)
 
     # Plot split test accuracy.
     if split_queries:

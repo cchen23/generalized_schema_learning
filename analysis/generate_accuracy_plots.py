@@ -5,7 +5,7 @@ Assumes results stored using train module in run_experiment.py.
 import argparse
 import fnmatch
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
@@ -129,8 +129,10 @@ def plot_data(data, plot_index, experiment_title, experiment_title2, chance_rate
     xtick_labels = [str(int(i * num_smooth)) for i in plt.xticks()[0]]
     plt.xticks(plt.xticks()[0], xtick_labels)
     plt.title("%s for %s\n%s" % (info_type, experiment_title, experiment_title2), fontsize=TITLE_FONTSIZE)
+    plt.show()
     if save:
-        plt.savefig(os.path.join(save_dir, '%s%s_%s_smoothed%d' % (experiment_title.replace("_","").replace(" ","").replace(",",""), experiment_title2.replace("_","").replace(" ","").replace(",",""), info_type.replace(" ",""), num_smooth)), bbox_inches="tight")
+        plt.savefig(os.path.join(save_dir, '%s%s_%s_smoothed%d' % (experiment_title.replace("_","").replace(" ","").replace(",",""), experiment_title2.replace("_","").replace(" ","").replace(",",""),
+         info_type.replace(" ",""), num_smooth)), bbox_inches="tight")
     plt.close()
 
 def plot_split_data(data, experiment_title, experiment_title2, num_smooth, split_queries, chance_rate, xlim=None, save=False, save_dir=None):
@@ -167,6 +169,7 @@ def plot_split_data(data, experiment_title, experiment_title2, num_smooth, split
     plt.gca().set_xlim(left=0)
     xtick_labels = [str(int(j * num_smooth)) for j in axes[0].get_xticks()]
     axes[0].set_xticklabels(xtick_labels)
+    plt.show()
     if save:
         plt.savefig(os.path.join(save_dir, '%s%s_TestAccuracy_smoothed%d_split' % (experiment_title.replace("_","").replace(" ","").replace(",",""), experiment_title2.replace("_","").replace(" ","").replace(",",""), num_smooth)), bbox_inches="tight")
     plt.close()
@@ -189,12 +192,12 @@ if __name__ == '__main__':
     experiment_title = str(args.exp_title)
     experiment_title2 = str(args.exp_title2)
     trial_num = args.trial_num
-    num_smooth = args.num_smooth
+    num_smooth = int(args.num_smooth)
     save = args.save == 'True'
     legend = args.legend == 'True'
     split_queries = args.split_queries
     chance_rate = args.chance_rate
-    xlim = 1000
+    xlim = 30000
     ylim = [0, 1.03]
     results_dir = os.path.join(base_dir, "results", experiment_folder)
     save_dir = os.path.join(base_dir, "figures")

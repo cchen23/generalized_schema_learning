@@ -239,16 +239,16 @@ def run_trial(experiment_name, previous_trained_epochs, model_name, historypath,
                     # plt.errorbar(xrange, np.average(scores_controller, axis=1), yerr = np.std(scores_controller, axis=1))
     if plot_memory_and_controller:
         plt.subplot(211)
-        plt.title("%s Experiment\n %s Trained for %d Epochs" % (experiment_name, title_model_name, previous_trained_epochs), fontsize=TITLE_FONTSIZE)
+        plt.title("%s Trained for %d Epochs" % (title_model_name, previous_trained_epochs), fontsize=TITLE_FONTSIZE)
         plt.axhline(y=chance_rate, label="Chance Rate", color='k', linestyle='--')
         plt.xticks(xrange, [""] * len(input_sequence))
         plt.subplot(212)
         plt.axhline(y=chance_rate, label="Chance Rate", color='k', linestyle='--')
-        legend = plt.legend(bbox_to_anchor=(1, 1.5))
+        # legend = plt.legend(bbox_to_anchor=(1, 1.5))
     else:
         plt.axhline(y=chance_rate, label="Chance Rate", color='k', linestyle='--')
-        legend = plt.legend(bbox_to_anchor=(1, 0.5))
-        plt.title("%s Experiment\n %s Trained for %d Epochs" % (experiment_name, title_model_name, previous_trained_epochs), fontsize=TITLE_FONTSIZE)
+        # legend = plt.legend(bbox_to_anchor=(1, 0.5))
+        plt.title("%s Trained for %d Epochs" % (title_model_name, previous_trained_epochs), fontsize=TITLE_FONTSIZE)
     plt.xticks(xrange, input_sequence, fontsize=X_FONTSIZE, rotation=90)
     # Set label colors.
     for xtick, xticklabel in zip(plt.gca().get_xticklabels(), input_sequence):
@@ -259,7 +259,8 @@ def run_trial(experiment_name, previous_trained_epochs, model_name, historypath,
     plt.ylabel("Hidden State")
     plt.xlabel("Input Word")
     # legend = plt.legend(ncol=2, bbox_to_anchor=(1, -1))
-    plt.savefig(os.path.join(savepath, ("experiment%s_trial%d_%depochs_%s_ranking" % (experiment_name, trial_num, previous_trained_epochs, model_name))), bbox_extra_artists=(legend,), bbox_inches='tight')
+    # plt.savefig(os.path.join(savepath, ("experiment%s_trial%d_%depochs_%s_ranking" % (experiment_name, trial_num, previous_trained_epochs, model_name))), bbox_extra_artists=(legend,), bbox_inches='tight')
+    plt.savefig(os.path.join(savepath, ("experiment%s_trial%d_%depochs_%s_ranking" % (experiment_name, trial_num, previous_trained_epochs, model_name))), bbox_inches='tight')
     plt.close()
 
 if __name__ == '__main__':
