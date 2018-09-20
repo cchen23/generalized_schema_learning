@@ -89,9 +89,9 @@ def shift_inputs(batchX, experiment_name):
     elif experiment_name == "variablefiller_gensymbolicstates_100000_1_testunseen_AllQs":
         padding_index = 16
     elif experiment_name == "fixedfiller_gensymbolicstates_100000_1_AllQs":
-        padding_index = 25
+        padding_index = 27
     elif experiment_name == "fixedfiller_gensymbolicstates_100000_1_testunseen_AllQs":
-        padding_index = 25
+        padding_index = 27
     else:
         raise ArgumentError("Unsupported experiment name.")
     batch_size = batchX.shape[0]

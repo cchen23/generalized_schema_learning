@@ -109,13 +109,13 @@ def write_run_analysis(experiment_name, filler_type, test_filename, trial_num):
     f.close()
 
 if __name__ == '__main__':
-    experiment_name = "fixedfiller_gensymbolicstates_100000_1_AllQs"
-    filler_type = "fixed_filler"
+    experiment_name = "variablefiller_gensymbolicstates_100000_1_testunseen_AllQs"
+    filler_type = "variable_filler"
     regime = None
     test_filename = "test_analyze.p"
-    num_epochs = 1000
-    architectures = ["RNN-LN-FW", "LSTM-LN"]
-    trial_num = 2
+    num_epochs = 7500
+    architectures = ["NTM2"]
+    trial_num = 1
     # write_run_test(experiment_name, filler_type, test_filename, trial_num)
     # write_run_analysis(experiment_name, filler_type, test_filename, trial_num)
     for architecture_name in architectures:

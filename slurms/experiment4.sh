@@ -21,72 +21,26 @@ source activate thesis
 module load cudnn/cuda-9.0/7.0.3
 module load cudatoolkit/9.0
 
-# python /home/cc27/Thesis/generalized_schema_learning/experiment_creators/create_analysis_data.py variablefiller_gensymbolicstates_100000_1_testunseen_AllQs
-# python /home/cc27/Thesis/generalized_schema_learning/experiment_creators/create_analysis_data.py variablefiller_gensymbolicstates_100000_1_testunseen_Subject
-# echo "Generated analysis data."
+python /home/cc27/Thesis/generalized_schema_learning/experiment_creators/create_analysis_data.py variablefiller_gensymbolicstates_100000_1_testunseen_AllQs
+python /home/cc27/Thesis/generalized_schema_learning/experiment_creators/create_analysis_data.py variablefiller_gensymbolicstates_100000_1_testunseen_Subject
+echo "Generated analysis data."
 
-# python /home/cc27/Thesis/generalized_schema_learning/run_experiment.py --function=analyze --exp_name=variablefiller_gensymbolicstates_100000_1_testunseen_Subject --filler_type=variable_filler --model_name=RNN-LN --test_filename=test_analyze.p --trial_num=0
-# python /home/cc27/Thesis/generalized_schema_learning/run_experiment.py --function=analyze --exp_name=variablefiller_gensymbolicstates_100000_1_testunseen_Subject --filler_type=variable_filler --model_name=RNN-LN-FW --test_filename=test_analyze.p --trial_num=0
-# python /home/cc27/Thesis/generalized_schema_learning/run_experiment.py --function=analyze --exp_name=variablefiller_gensymbolicstates_100000_1_testunseen_Subject --filler_type=variable_filler --model_name=LSTM-LN --test_filename=test_analyze.p --trial_num=0
-# python /home/cc27/Thesis/generalized_schema_learning/run_experiment.py --function=analyze --exp_name=variablefiller_gensymbolicstates_100000_1_testunseen_Subject --filler_type=variable_filler --model_name=NTM2 --test_filename=test_analyze.p --trial_num=0
-# python /home/cc27/Thesis/generalized_schema_learning/run_experiment.py --function=analyze --exp_name=variablefiller_gensymbolicstates_100000_1_testunseen_AllQs --filler_type=variable_filler --model_name=RNN-LN --test_filename=test_analyze.p --trial_num=0
-# python /home/cc27/Thesis/generalized_schema_learning/run_experiment.py --function=analyze --exp_name=variablefiller_gensymbolicstates_100000_1_testunseen_AllQs --filler_type=variable_filler --model_name=RNN-LN-FW --test_filename=test_analyze.p --trial_num=0
-# python /home/cc27/Thesis/generalized_schema_learning/run_experiment.py --function=analyze --exp_name=variablefiller_gensymbolicstates_100000_1_testunseen_AllQs --filler_type=variable_filler --model_name=LSTM-LN --test_filename=test_analyze.p --trial_num=0
-# python /home/cc27/Thesis/generalized_schema_learning/run_experiment.py --function=analyze --exp_name=variablefiller_gensymbolicstates_100000_1_testunseen_AllQs --filler_type=variable_filler --model_name=NTM2 --test_filename=test_analyze.p --trial_num=0
-# echo "Saved network states."
-#
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Dessert RNN-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Drink RNN-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Emcee RNN-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Friend RNN-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Poet RNN-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Subject RNN-LN
+python /home/cc27/Thesis/generalized_schema_learning/run_experiment.py --function=analyze --exp_name=variablefiller_gensymbolicstates_100000_1_testunseen_Subject --filler_type=variable_filler --model_name=RNN-LN --test_filename=test_analyze.p --trial_num=0
+python /home/cc27/Thesis/generalized_schema_learning/run_experiment.py --function=analyze --exp_name=variablefiller_gensymbolicstates_100000_1_testunseen_Subject --filler_type=variable_filler --model_name=RNN-LN-FW --test_filename=test_analyze.p --trial_num=0
+python /home/cc27/Thesis/generalized_schema_learning/run_experiment.py --function=analyze --exp_name=variablefiller_gensymbolicstates_100000_1_testunseen_Subject --filler_type=variable_filler --model_name=LSTM-LN --test_filename=test_analyze.p --trial_num=0
+python /home/cc27/Thesis/generalized_schema_learning/run_experiment.py --function=analyze --exp_name=variablefiller_gensymbolicstates_100000_1_testunseen_Subject --filler_type=variable_filler --model_name=NTM2 --test_filename=test_analyze.p --trial_num=0
+python /home/cc27/Thesis/generalized_schema_learning/run_experiment.py --function=analyze --exp_name=variablefiller_gensymbolicstates_100000_1_testunseen_AllQs --filler_type=variable_filler --model_name=RNN-LN --test_filename=test_analyze.p --trial_num=0
+python /home/cc27/Thesis/generalized_schema_learning/run_experiment.py --function=analyze --exp_name=variablefiller_gensymbolicstates_100000_1_testunseen_AllQs --filler_type=variable_filler --model_name=RNN-LN-FW --test_filename=test_analyze.p --trial_num=0
+python /home/cc27/Thesis/generalized_schema_learning/run_experiment.py --function=analyze --exp_name=variablefiller_gensymbolicstates_100000_1_testunseen_AllQs --filler_type=variable_filler --model_name=LSTM-LN --test_filename=test_analyze.p --trial_num=0
+python /home/cc27/Thesis/generalized_schema_learning/run_experiment.py --function=analyze --exp_name=variablefiller_gensymbolicstates_100000_1_testunseen_AllQs --filler_type=variable_filler --model_name=NTM2 --test_filename=test_analyze.p --trial_num=0
+echo "Saved network states."
 
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Dessert RNN-LN-FW
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Drink RNN-LN-FW
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Emcee RNN-LN-FW
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Friend RNN-LN-FW
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Poet RNN-LN-FW
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Subject RNN-LN-FW
+python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history_singleplot.py AllQs 30000 NTM2
+python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history_singleplot.py AllQs 30000 RNN-LN
+python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history_singleplot.py AllQs 30000 RNN-LN-FW
+python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history_singleplot.py AllQs 30000 LSTM-LN
 
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Dessert LSTM-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Drink LSTM-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Emcee LSTM-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Friend LSTM-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Poet LSTM-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Subject LSTM-LN
-
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Dessert NTM2
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Drink NTM2
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Emcee NTM2
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Friend NTM2
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Poet NTM2
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Subject NTM2
-
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Dessert RNN-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Drink RNN-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Emcee RNN-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Friend RNN-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Poet RNN-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Subject RNN-LN
-
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Dessert RNN-LN-FW
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Drink RNN-LN-FW
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Emcee RNN-LN-FW
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Friend RNN-LN-FW
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Poet RNN-LN-FW
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Subject RNN-LN-FW
-
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Dessert LSTM-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Drink LSTM-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Emcee LSTM-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Friend LSTM-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Poet LSTM-LN
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Subject LSTM-LN
-
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Dessert NTM2
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Drink NTM2
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Emcee NTM2
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Friend NTM2
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Poet NTM2
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubject 3000 Subject NTM2
+python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history_singleplot.py QSubject 3000 NTM2
+python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history_singleplot.py QSubject 3000 RNN-LN
+python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history_singleplot.py QSubject 3000 RNN-LN-FW
+python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history_singleplot.py QSubject 3000 LSTM-LN
