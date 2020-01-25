@@ -140,6 +140,8 @@ def load_data(data_path):
     """Helper module to load input and output data."""
     with open(data_path, 'rb') as f:
         X, y = pickle.load(f)
+    X = X.astype(int)
+    y = y.astype(int)
     print(data_path, "X shape: ", np.shape(X), "y shape", np.shape(y))
     return X, y
 
@@ -183,13 +185,24 @@ def train(FLAGS):
     if 'QSubjectQFriend' in FLAGS.experiment_name or "curriculum" in FLAGS.experiment_name:
         test_X_subject, test_y_subject = load_data(os.path.join(FLAGS.data_dir, 'test_QSubject.p'))
         test_X_friend, test_y_friend = load_data(os.path.join(FLAGS.data_dir, 'test_QFriend.p'))
-    elif 'AllQs' in FLAGS.experiment_name:
+    elif 'AllQs' in FLAGS.experiment_name or "train3roles_testnewrole" in FLAGS.experiment_name:
         test_X_subject, test_y_subject = load_data(os.path.join(FLAGS.data_dir, 'test_QSubject.p'))
         test_X_poet, test_y_poet = load_data(os.path.join(FLAGS.data_dir, 'test_QPoet.p'))
-        test_X_dessert, test_y_dessert = load_data(os.path.join(FLAGS.data_dir, 'test_QDessert_bought.p'))
-        test_X_drink, test_y_drink = load_data(os.path.join(FLAGS.data_dir, 'test_QDrink_bought.p'))
+        try:
+            test_X_dessert, test_y_dessert = load_data(os.path.join(FLAGS.data_dir, 'test_QDessert_bought.p'))
+            test_X_drink, test_y_drink = load_data(os.path.join(FLAGS.data_dir, 'test_QDrink_bought.p'))
+        except:
+            test_X_dessert, test_y_dessert = load_data(os.path.join(FLAGS.data_dir, 'test_QDessert.p'))
+            test_X_drink, test_y_drink = load_data(os.path.join(FLAGS.data_dir, 'test_QDrink.p'))
         test_X_emcee, test_y_emcee = load_data(os.path.join(FLAGS.data_dir, 'test_QEmcee.p'))
         test_X_friend, test_y_friend = load_data(os.path.join(FLAGS.data_dir, 'test_QFriend.p'))
+        if "withunseentestfillers" in FLAGS.experiment_name:
+            test_X_subject_unseen, test_y_subject_unseen = load_data(os.path.join(FLAGS.data_dir, 'test_QSubject_unseen.p'))
+            test_X_poet_unseen, test_y_poet_unseen = load_data(os.path.join(FLAGS.data_dir, 'test_QPoet_unseen.p'))
+            test_X_dessert_unseen, test_y_dessert_unseen = load_data(os.path.join(FLAGS.data_dir, 'test_QDessert_unseen.p'))
+            test_X_drink_unseen, test_y_drink_unseen = load_data(os.path.join(FLAGS.data_dir, 'test_QDrink_unseen.p'))
+            test_X_emcee_unseen, test_y_emcee_unseen = load_data(os.path.join(FLAGS.data_dir, 'test_QEmcee_unseen.p'))
+            test_X_friend_unseen, test_y_friend_unseen = load_data(os.path.join(FLAGS.data_dir, 'test_QFriend_unseen.p'))
 
     embedding = get_embedding(FLAGS)
 
@@ -207,9 +220,14 @@ def train(FLAGS):
                     previous_results_split = pickle.load(previous_results_file_split)
                     test_epoch_accuracies_split = previous_results_split['accuracies']
                     test_epoch_losses_split = previous_results_split['losses']
-            elif 'AllQs' in FLAGS.experiment_name:
+            elif 'AllQs' in FLAGS.experiment_name or "train3roles_testnewrole" in FLAGS.experiment_name:
                 with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d_split.p' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num)), 'rb') as previous_results_file_split:
-                    test_epoch_accuracies_split, test_epoch_losses_split = pickle.load(previous_results_file_split)
+                    previous_results_split = pickle.load(previous_results_file_split)
+                    test_epoch_accuracies_split, test_epoch_losses_split = previous_results_split['accuracies'], previous_results_split['losses']
+                if "withunseentestfillers" in FLAGS.experiment_name:
+                    with open(os.path.join(FLAGS.results_dir, "%s_results_%depochs_trial%d_unseen.p" % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num)), "rb") as previous_results_file_unseen:
+                        previous_results_unseen = pickle.load(previous_results_file_unseen)
+                        test_epoch_accuracies_unseen, test_epoch_losses_unseen = previous_results_unseen["accuracies"], previous_results_unseen["losses"]
         else:
                 train_epoch_loss = []; test_epoch_loss = []
                 train_epoch_accuracy = []; test_epoch_accuracy = []
@@ -217,9 +235,12 @@ def train(FLAGS):
                 if 'QSubjectQFriend' in FLAGS.experiment_name or "curriculum" in FLAGS.experiment_name:
                     test_epoch_accuracies_split = {'QFriend':[], 'QSubject':[]}
                     test_epoch_losses_split = {'QFriend':[], 'QSubject':[]}
-                elif 'AllQs' in  FLAGS.experiment_name:
+                elif 'AllQs' in  FLAGS.experiment_name or "train3roles_testnewrole" in FLAGS.experiment_name:
                     test_epoch_accuracies_split = {'QDrink':[], 'QDessert':[], 'QEmcee':[], 'QFriend':[], 'QPoet':[], 'QSubject':[]}
                     test_epoch_losses_split = {'QDrink':[], 'QDessert':[], 'QEmcee':[], 'QFriend':[], 'QPoet':[], 'QSubject':[]}
+                    if "withunseentestfillers" in FLAGS.experiment_name:
+                        test_epoch_accuracies_unseen = {'QDrink':[], 'QDessert':[], 'QEmcee':[], 'QFriend':[], 'QPoet':[], 'QSubject':[]}
+                        test_epoch_losses_unseen = {'QDrink':[], 'QDessert':[], 'QEmcee':[], 'QFriend':[], 'QPoet':[], 'QSubject':[]}
         for train_epoch_num, train_epoch in enumerate(generate_epoch(train_X, train_y, FLAGS.num_epochs, FLAGS, embedding)):
             test_start_time = time.time()
             train_epoch_num += 1 # Use 1-based indexing for train epoch numbering.
@@ -258,7 +279,7 @@ def train(FLAGS):
                 test_epoch_losses_split['QFriend'].append(mean_test_batch_loss_friend)
                 test_epoch_accuracies_split['QSubject'].append(mean_test_batch_accuracy_subject)
                 test_epoch_losses_split['QSubject'].append(mean_test_batch_loss_subject)
-            elif 'AllQs' in FLAGS.experiment_name:
+            elif 'AllQs' in FLAGS.experiment_name or "train3roles_testnewrole" in FLAGS.experiment_name:
                 mean_test_batch_accuracy_dessert, mean_test_batch_loss_dessert = get_meantestinfo(sess, test_X_dessert, test_y_dessert, FLAGS, model, embedding)
                 mean_test_batch_accuracy_drink, mean_test_batch_loss_drink = get_meantestinfo(sess, test_X_drink, test_y_drink, FLAGS, model, embedding)
                 mean_test_batch_accuracy_emcee, mean_test_batch_loss_emcee = get_meantestinfo(sess, test_X_emcee, test_y_emcee, FLAGS, model, embedding)
@@ -277,6 +298,25 @@ def train(FLAGS):
                 test_epoch_losses_split['QPoet'].append(mean_test_batch_loss_poet)
                 test_epoch_accuracies_split['QSubject'].append(mean_test_batch_accuracy_subject)
                 test_epoch_losses_split['QSubject'].append(mean_test_batch_loss_subject)
+                if "withunseentestfillers" in FLAGS.experiment_name:
+                    mean_test_batch_accuracy_dessert_unseen, mean_test_batch_loss_dessert_unseen = get_meantestinfo(sess, test_X_dessert_unseen, test_y_dessert_unseen, FLAGS, model, embedding)
+                    mean_test_batch_accuracy_drink_unseen, mean_test_batch_loss_drink_unseen = get_meantestinfo(sess, test_X_drink_unseen, test_y_drink_unseen, FLAGS, model, embedding)
+                    mean_test_batch_accuracy_emcee_unseen, mean_test_batch_loss_emcee_unseen = get_meantestinfo(sess, test_X_emcee_unseen, test_y_emcee_unseen, FLAGS, model, embedding)
+                    mean_test_batch_accuracy_friend_unseen, mean_test_batch_loss_friend_unseen = get_meantestinfo(sess, test_X_friend_unseen, test_y_friend_unseen, FLAGS, model, embedding)
+                    mean_test_batch_accuracy_poet_unseen, mean_test_batch_loss_poet_unseen = get_meantestinfo(sess, test_X_poet_unseen, test_y_poet_unseen, FLAGS, model, embedding)
+                    mean_test_batch_accuracy_subject_unseen, mean_test_batch_loss_subject_unseen = get_meantestinfo(sess, test_X_subject_unseen, test_y_subject_unseen, FLAGS, model, embedding)
+                    test_epoch_accuracies_unseen['QDessert'].append(mean_test_batch_accuracy_dessert_unseen)
+                    test_epoch_losses_unseen['QDessert'].append(mean_test_batch_loss_dessert_unseen)
+                    test_epoch_accuracies_unseen['QDrink'].append(mean_test_batch_accuracy_drink_unseen)
+                    test_epoch_losses_unseen['QDrink'].append(mean_test_batch_loss_drink_unseen)
+                    test_epoch_accuracies_unseen['QEmcee'].append(mean_test_batch_accuracy_emcee_unseen)
+                    test_epoch_losses_unseen['QEmcee'].append(mean_test_batch_loss_emcee_unseen)
+                    test_epoch_accuracies_unseen['QFriend'].append(mean_test_batch_accuracy_friend_unseen)
+                    test_epoch_losses_unseen['QFriend'].append(mean_test_batch_loss_friend_unseen)
+                    test_epoch_accuracies_unseen['QPoet'].append(mean_test_batch_accuracy_poet_unseen)
+                    test_epoch_losses_unseen['QPoet'].append(mean_test_batch_loss_poet_unseen)
+                    test_epoch_accuracies_unseen['QSubject'].append(mean_test_batch_accuracy_subject_unseen)
+                    test_epoch_losses_unseen['QSubject'].append(mean_test_batch_loss_subject_unseen)
             print ('Epoch: [%i/%i] time: %.4f, test loss: %.7f,'
                     ' test acc: %.7f' % (train_epoch_num, FLAGS.num_epochs,
                         time.time() - test_start_time, test_epoch_loss[-1],
@@ -290,13 +330,53 @@ def train(FLAGS):
                 print("Saving the model and results at epoch %d." % (train_epoch_num + previous_trained_epochs))
                 model.saver.save(sess, checkpoint_path, global_step=(train_epoch_num + previous_trained_epochs))
                 with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d.p' % (FLAGS.model_name, train_epoch_num + previous_trained_epochs, FLAGS.trial_num)), 'wb') as f:
-                    pickle.dump([train_epoch_accuracy, test_epoch_accuracy, train_epoch_loss, test_epoch_loss, train_epoch_gradient_norm], f)
+                    pickle.dump({"train_accuracy":train_epoch_accuracy, "test_accuracy":test_epoch_accuracy, "train_loss":train_epoch_loss, "test_loss":test_epoch_loss, "train_gradient_norm":train_epoch_gradient_norm}, f)
                 if 'QSubjectQFriend' in FLAGS.experiment_name or "curriculum" in FLAGS.experiment_name:
                     with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d_split.p' % (FLAGS.model_name, train_epoch_num + previous_trained_epochs, FLAGS.trial_num)), 'wb') as f:
                         pickle.dump({'accuracies':test_epoch_accuracies_split, 'losses':test_epoch_losses_split}, f)
-                elif 'AllQs' in FLAGS.experiment_name:
-                    with open(os.path.join(FLAGS.results_dir + '%s_results_%depochs_trial%d_split.p' % (FLAGS.model_name, train_epoch_num + previous_trained_epochs, FLAGS.trial_num)), 'wb') as f:
+                elif 'AllQs' in FLAGS.experiment_name or "train3roles_testnewrole" in FLAGS.experiment_name:
+                    with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d_split.p' % (FLAGS.model_name, train_epoch_num + previous_trained_epochs, FLAGS.trial_num)), 'wb') as f:
                         pickle.dump({'accuracies':test_epoch_accuracies_split, 'losses':test_epoch_losses_split}, f)
+                    if "withunseentestfillers" in FLAGS.experiment_name:
+                        with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d_unseen.p' % (FLAGS.model_name, train_epoch_num + previous_trained_epochs, FLAGS.trial_num)), 'wb') as f:
+                            pickle.dump({'accuracies':test_epoch_accuracies_unseen, 'losses':test_epoch_losses_unseen}, f)
+
+def test_split(FLAGS):
+    """Tests the model. (Originally written for split test sets.)
+    """
+    # Load the train/test datasets
+    print("Loading datasets from directory %s:" % FLAGS.data_dir)
+    queries = ["QSubject", "QPoet", "QDessert", "QDrink", "QEmcee", "QFriend"]
+    descriptions = ["differentroles", "sameroles", "unseen"]
+    shuffled_nums = [1, 2]
+    test_Xs = {}
+    test_ys = {}
+    testnames = []
+    for query in queries:
+        for description in descriptions:
+            for shuffled_num in shuffled_nums:
+                testset_name = "test_%s_shuffled%d_%s" % (query, shuffled_num, description)
+                test_X, test_y = load_data(os.path.join(FLAGS.data_dir, "%s.p" % testset_name))
+                test_Xs[testset_name] = test_X
+                test_ys[testset_name] = test_y
+                testnames.append(testset_name)
+    embedding = get_embedding(FLAGS)
+
+    with tf.Session() as sess:
+        # Load the model
+        model, previous_trained_epochs = create_model(sess, FLAGS)
+        start_time = time.time()
+        test_epoch_accuracies_split = {}
+        test_epoch_losses_split = {}
+        for testset_name in testnames:
+            test_X = test_Xs[testset_name]
+            test_y = test_ys[testset_name]
+            accuracy, loss = get_meantestinfo(sess, test_X, test_y, FLAGS, model, embedding)
+            test_epoch_accuracies_split[testset_name] = accuracy
+            test_epoch_losses_split[testset_name] = loss
+        # Dump results.
+        with open(os.path.join(FLAGS.results_dir, "%s_shuffled_%depochs_testresults_trial%d.p" % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num)), "wb") as f:
+            pickle.dump({"accuracy":test_epoch_accuracies_split, "loss":test_epoch_losses_split}, f)
 
 def test(FLAGS, test_filename):
     """Perform error analysis on test set.
@@ -326,6 +406,7 @@ def test(FLAGS, test_filename):
         inputs = []
         predictions = []
         responses = []
+        done = False
         for test_epoch_num, test_epoch in enumerate(generate_epoch(test_X, test_y, num_epochs=1, FLAGS=FLAGS, embedding=embedding)):
             for test_batch_num, (batch_X, batch_y, batch_embedding) in enumerate(test_epoch):
                 print(test_batch_num)
@@ -340,6 +421,11 @@ def test(FLAGS, test_filename):
                     inputs.append(test_input)
                     predictions.append(prediction)
                     responses.append(response)
+                if len(inputs) > 50:
+                    done = True
+                    break
+            if done:
+                break
         print('Test set name %s' % str(test_filename))
         print ('Test time: %.4f, test loss: %.7f,'
             ' test acc: %.7f' % (time.time() - test_start_time, np.mean(test_batch_loss),
@@ -352,7 +438,7 @@ def test(FLAGS, test_filename):
         predictions_dir = os.path.join(FLAGS.results_dir, 'predictions')
         if not os.path.exists(predictions_dir):
             os.makedirs(predictions_dir)
-        with open(os.path.join(predictions_dir, 'test_analysis_results_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename)), 'wb') as f:
+        with open(os.path.join(predictions_dir, 'test_analysis_results_%s_%depochs_trial%d_%s_50examples' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename)), 'wb') as f:
             pickle.dump(analysis_results, f)
 
 def analyze(FLAGS, test_filename):
@@ -367,8 +453,8 @@ def analyze(FLAGS, test_filename):
         Experiment inputs, correct outputs, network predictions, and network state histories.
    """
    # Load the train/test datasets
-   if FLAGS.model_name not in ["NTM2", "LSTM-LN", "RNN-LN-FW"]:
-       raise ArgumentError("Analysis currently works only with LSTM, Fast Weights, and reduced NTM.")
+   if FLAGS.model_name not in ["NTM2", "LSTM-LN", "RNN-LN-FW", "RNN-LN"]:
+       raise ArgumentError("Analysis currently works only with RNN, LSTM, Fast Weights, and reduced NTM.")
    print("Running controller and external memory buffer analysis")
    print("Loading datasets from directory %s:" % FLAGS.data_dir)
    test_X, test_y = load_data(os.path.join(FLAGS.data_dir, test_filename))
@@ -397,7 +483,10 @@ def analyze(FLAGS, test_filename):
                    first_epoch = False
                    gate_histories = controller_history[0]
                    hidden_histories = controller_history[1]
-                   memory_histories = memory_history
+                   memory_histories = memory_history[0]
+                   if FLAGS.model_name in ["NTM2"]:
+                       read_weights_histories = memory_history[1]
+                       write_weights_histories = memory_history[2]
                    output_vectors = batch_y
                    input_vectors = batch_X
                    batch_embeddings = batch_embedding
@@ -405,8 +494,12 @@ def analyze(FLAGS, test_filename):
                    if FLAGS.model_name in ["NTM2", "LSTM-LN"]:
                        gate_histories = np.concatenate((gate_histories, controller_history[0]), axis=0)
                    hidden_histories = np.concatenate((hidden_histories, controller_history[1]), axis=0)
-                   if FLAGS.model_name in ["NTM2", "RNN-LN-FW"]:
+                   if FLAGS.model_name in ["RNN-LN-FW"]:
                        memory_histories = np.concatenate((memory_histories, memory_history), axis=0)
+                   if FLAGS.model_name in ["NTM2"]:
+                       memory_histories = np.concatenate((memory_histories, memory_history[0]), axis=0)
+                       read_weights_histories = np.concatenate((read_weights_histories, memory_history[1]), axis=0)
+                       write_weights_histories = np.concatenate((write_weights_histories, memory_history[2]), axis=0)
                    output_vectors = np.concatenate((output_vectors, batch_y), axis=0)
                    input_vectors = np.concatenate((input_vectors, batch_X), axis=0)
                    batch_embeddings = np.concatenate((batch_embeddings, batch_embedding), axis=0)
@@ -447,13 +540,94 @@ def analyze(FLAGS, test_filename):
        if FLAGS.model_name in ["NTM2", "RNN-LN-FW"]:
            with open(os.path.join(predictions_dir, 'memory_histories_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
                np.savez(f, memory_histories)
+       if FLAGS.model_name in ["NTM2"]:
+           with open(os.path.join(predictions_dir, 'read_weights_histories_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
+               np.savez(f, read_weights_histories)
+           with open(os.path.join(predictions_dir, 'write_weights_histories_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
+               np.savez(f, write_weights_histories)
+def probe_statistics(FLAGS, test_filename):
+   """Perform analysis on specified test set. Used for decoding experiments.
+
+   NOTE: Currently works for select models: NTM2, RNN-LN-FW, LSTM-LN.
+   Args:
+       FLAGS: Parameters object for the experiment.
+       test_filename: Name of file containing desired test set.
+
+   Saves:
+        Experiment inputs, correct outputs, network predictions, and network state histories.
+   """
+   # Load the train/test datasets
+   if FLAGS.model_name not in ["NTM2", "LSTM-LN", "RNN-LN-FW", "RNN-LN"]:
+       raise ArgumentError("Analysis currently works only with RNN, LSTM, Fast Weights, and reduced NTM.")
+   print("Running controller and external memory buffer analysis")
+   print("Loading datasets from directory %s:" % FLAGS.data_dir)
+   test_X, test_y = load_data(os.path.join(FLAGS.data_dir, test_filename))
+   embedding = get_embedding(FLAGS)
+   with tf.Session() as sess:
+
+       # Load the model
+       model, previous_trained_epochs = create_model(sess, FLAGS)
+       start_time = time.time()
+
+       # test set
+       test_start_time = time.time()
+       test_batch_loss = []
+       test_batch_accuracy = []
+       inputs = []
+       predictions = []
+       responses = []
+       first_epoch = True
+       for test_epoch_num, test_epoch in enumerate(generate_epoch(test_X, test_y, num_epochs=1, FLAGS=FLAGS, embedding=embedding)):
+           for test_batch_num, (batch_X, batch_y, batch_embedding) in enumerate(test_epoch):
+               print(test_batch_num)
+               loss, accuracy, controller_history, memory_history = model.step(sess, batch_X, batch_y, batch_embedding, FLAGS.l, FLAGS.e, run_option="analyze")
+               test_batch_loss.append(loss)
+               test_batch_accuracy.append(accuracy)
+               if first_epoch:
+                   first_epoch = False
+                   output_vectors = batch_y
+                   input_vectors = batch_X
+                   batch_embeddings = batch_embedding
+               else:
+                   output_vectors = np.concatenate((output_vectors, batch_y), axis=0)
+                   input_vectors = np.concatenate((input_vectors, batch_X), axis=0)
+                   batch_embeddings = np.concatenate((batch_embeddings, batch_embedding), axis=0)
+               logits = model.logits.eval(feed_dict={model.X: batch_X, model.embedding: batch_embedding,
+                   model.l: FLAGS.l, model.e: FLAGS.e})
+               for i in range(FLAGS.batch_size):
+                   test_input = [embedding_util.get_corpus_index(vector, batch_embedding) for vector in batch_X[i]]
+                   prediction = embedding_util.get_corpus_index(logits[i], batch_embedding)
+                   response = embedding_util.get_corpus_index(batch_y[i], batch_embedding)
+                   inputs.append(test_input)
+                   predictions.append(prediction)
+                   responses.append(response)
+       print('Test set name %s' % str(test_filename))
+       print ('Test time: %.4f, test loss: %.7f,'
+           ' test acc: %.7f' % (time.time() - test_start_time, np.mean(test_batch_loss),
+           np.mean(test_batch_accuracy)))
+       analysis_results = pd.DataFrame(
+                       {'inputs':inputs,
+                       'predictions':predictions,
+                       'responses':responses
+                       })
+       predictions_dir = os.path.join(FLAGS.results_dir, 'probe_statistics_%s' % test_filename.replace(".p", ""))
+       if not os.path.exists(predictions_dir):
+           os.makedirs(predictions_dir)
+       with open(os.path.join(predictions_dir, 'test_analysis_results_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename)), 'wb') as f:
+           pickle.dump(analysis_results, f)
+       with open(os.path.join(predictions_dir, 'batch_embeddings_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
+           np.savez(f, batch_embeddings)
+       with open(os.path.join(predictions_dir, 'input_vectors_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
+           np.savez(f, input_vectors)
+       with open(os.path.join(predictions_dir, 'output_vectors_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
+           np.savez(f, output_vectors)
 
 if __name__ == '__main__':
 
     FLAGS = parameters()
     parser=argparse.ArgumentParser()
 
-    parser.add_argument('--function', help='Desired function.', choices=["train", "test", "analyze"], required=True)
+    parser.add_argument('--function', help='Desired function.', choices=["train", "test", "analyze", "test_split", "probe_statistics"], required=True)
     parser.add_argument('--exp_name', help='Name of folder containing experiment data.', type=str, required=True)
     parser.add_argument('--filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler"], required=True)
     parser.add_argument('--model_name', help='Name of architecture.', choices=["CONTROL", "DNC", "GRU-LN", "LSTM-LN", "NTM2", "RNN-LN", "RNN-LN-FW"], required=True)
@@ -490,3 +664,9 @@ if __name__ == '__main__':
     elif args.function == 'analyze':
         test_filename = args.test_filename
         analyze(FLAGS, test_filename)
+    elif args.function == "test_split":
+        test_split(FLAGS)
+    elif args.function == 'probe_statistics':
+        test_filename = args.test_filename
+        print("test filename", test_filename)
+        probe_statistics(FLAGS, test_filename)
