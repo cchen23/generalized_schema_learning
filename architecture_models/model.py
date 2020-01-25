@@ -185,7 +185,10 @@ class fast_weights_model(object):
         elif run_option == "forward_only": # testing
             output_feed = [self.loss, self.accuracy]
         elif run_option == "analyze":
-            output_feed = [self.loss, self.accuracy, self.hidden_history, self.fastweights_history]
+            if self.model_name == "RNN-LN-FW":
+                output_feed = [self.loss, self.accuracy, self.hidden_history, self.fastweights_history]
+            elif self.model_name == "RNN-LN":
+                output_feed = [self.loss, self.accuracy, self.hidden_history]
         else:
             raise ValueError("Invalid run option.")
 
@@ -197,4 +200,7 @@ class fast_weights_model(object):
         elif run_option == "forward_only":
             return outputs[0], outputs[1]
         elif run_option == "analyze":
-            return outputs[0], outputs[1], (None, outputs[2]), outputs[3]
+            if self.model_name == "RNN-LN-FW":
+                return outputs[0], outputs[1], (None, outputs[2]), outputs[3]
+            elif self.model_name == "RNN-LN":
+                return outputs[0], outputs[1], (None, outputs[2]), None
