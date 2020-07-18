@@ -192,7 +192,7 @@ if __name__ == '__main__':
     experiment_title = str(args.exp_title)
     experiment_title2 = str(args.exp_title2)
     trial_num = args.trial_num
-    num_smooth = args.num_smooth
+    num_smooth = int(args.num_smooth)
     save = args.save == 'True'
     legend = args.legend == 'True'
     split_queries = args.split_queries

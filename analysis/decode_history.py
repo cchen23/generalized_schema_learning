@@ -38,7 +38,6 @@ def get_input_index(experiment_name, Y_type):
 
 def get_one_data(timestep, data_option, train_indices, test_indices, Y_type, input_vectors, output_vectors, controller_histories_hiddenstate, memory_histories, experiment_name):
     """Returns network state data at a specified timestep.
-
     Args:
         timestep: Desired timestep of network state.
         data_option: Whether to obtain data from hidden state (`controller`) or enhanced memory (`memory`).
@@ -49,7 +48,6 @@ def get_one_data(timestep, data_option, train_indices, test_indices, Y_type, inp
         output_vectors: Network's outputs.
         controller_histories_hiddenstate: Saved controller histories.
         memory_histories: Saved enhanced memory component histories.
-
     Returns:
         X_train: Network states (to train mapping).
         y_train: Filler to decode (to train mapping).
@@ -94,7 +92,6 @@ def get_one_data(timestep, data_option, train_indices, test_indices, Y_type, inp
 # Y = XW.
 def ridge_fit(ridge_param, X_train, Y_train):
     """Learns a mapping using ridge regression.
-
     Args:
         ridge_param: Parameter for ridge regression.
         X_train: [n_samples x n_features] matrix of network states.
@@ -121,7 +118,6 @@ def ridge_fit(ridge_param, X_train, Y_train):
 
 def score_prediction(prediction, batch_embedding, Yi):
     """Computes the ranking score of a prediction (change rate 50%).
-
     Args:
         prediction: Predicted vector.
         batch_embedding: Matrix of all vectors in corpus.
@@ -177,7 +173,6 @@ def get_scores_byword(getdata_function, option, num_timesteps, train_indices, te
     return allscores, W_ridge
 
 def run_trial(experiment_name, previous_trained_epochs, Y_type, model_name, historypath, savepath, input_sequence, trial_num):
-    chance_rate = 0.5
     title_model_names = {"LSTM-LN":"LSTM", "RNN-LN-FW":"Fast Weights", "RNN-LN":"RNN", "NTM2":"Reduced NTM"}
     title_model_name = title_model_names[model_name]
     test_filename = "test_analyze.npz"
@@ -205,17 +200,13 @@ def run_trial(experiment_name, previous_trained_epochs, Y_type, model_name, hist
     test_indices = all_indices[int(train_fraction * num_examples):]
 
     scores_controller, W_ridges_controller = get_scores_byword(get_one_data, "controller", num_timesteps, train_indices, test_indices, Y_type, batch_embeddings, test_info, input_vectors, output_vectors, controller_histories_hiddenstate, memory_histories, experiment_name)
-    with open(os.path.join(savepath, "experiment%s_trial%d_%depochs_%s_ranking_%s_controller_W_ridges" % (experiment_name, trial_num, previous_trained_epochs, Y_type, model_name), "wb") as f:
-            pickle.dump(W_ridges_controller, f)
     print("got hidden state scores")
     if model_name in ["NTM2", "RNN-LN-FW"]:
         scores_memory, W_ridges_memory = get_scores_byword(get_one_data, "memory", num_timesteps, train_indices, test_indices, Y_type, batch_embeddings, test_info, input_vectors, output_vectors, controller_histories_hiddenstate, memory_histories, experiment_name)
-        with open(os.path.join(savepath, "experiment%s_trial%d_%depochs_%s_ranking_%s_memory_W_ridges" % (experiment_name, trial_num, previous_trained_epochs, Y_type, model_name), "wb") as f:
-                pickle.dump(W_ridges_memory, f)
         xrange = range(len(input_sequence))
         plt.subplot(211)
         plt.title("%s Experiment, Guessing %s\n%s Trained for %d Epochs" % (experiment_name, Y_type, title_model_name, previous_trained_epochs), fontsize=TITLE_FONTSIZE)
-        plt.errorbar(xrange, np.average(scores_memory, axis=1), yerr = np.std(scores_memory, axis=1))
+        plt.errorbar(xrange, np.average(scores_memory, axis=1), yerr = np.std(scores_memory, axis=1), label="memory")
         plt.grid(color='grey', linestyle='-', linewidth=1, alpha=0.5)
         plt.ylim([0,1])
         if "NTM2" in model_name:
@@ -223,37 +214,26 @@ def run_trial(experiment_name, previous_trained_epochs, Y_type, model_name, hist
         elif "RNN-LN-FW" in model_name:
             plt.ylabel("FW Matrix")
         plt.xticks(xrange, [""] * len(input_sequence))
-        plt.axhline(y=chance_rate, label="Chance Rate", color='k', linestyle='--')
 
         plt.subplot(212)
-        plt.errorbar(xrange, np.average(scores_controller, axis=1), yerr = np.std(scores_controller, axis=1))
-        plt.axhline(y=chance_rate, label="Chance Rate", color='k', linestyle='--')
+        plt.errorbar(xrange, np.average(scores_controller, axis=1), yerr = np.std(scores_controller, axis=1), label="controller")
         plt.grid(color='grey', linestyle='-', linewidth=1, alpha=0.5)
         plt.ylim([0,1])
         plt.ylabel("Hidden State")
         plt.xlabel("Input Word")
         plt.xticks(xrange, input_sequence, fontsize=X_FONTSIZE, rotation=90)
-        for xtick, xticklabel in zip(plt.gca().get_xticklabels(), input_sequence):
-            if xticklabel == Y_type:
-                xtick.set_color('g')
-        plt.legend()
         plt.tight_layout()
         plt.savefig(os.path.join(savepath, ("experiment%s_trial%d_%depochs_%s_ranking_%s" % (experiment_name, trial_num, previous_trained_epochs, Y_type, model_name))))
         plt.close()
     else:
         xrange = range(len(input_sequence))
         plt.title("%s Experiment, Guessing %s\n%s Trained for %d Epochs" % (experiment_name, Y_type, title_model_name, previous_trained_epochs), fontsize=TITLE_FONTSIZE)
-        plt.errorbar(xrange, np.average(scores_controller, axis=1), yerr = np.std(scores_controller, axis=1))
-        plt.axhline(y=chance_rate, label="Chance Rate", color='k', linestyle='--')
+        plt.errorbar(xrange, np.average(scores_controller, axis=1), yerr = np.std(scores_controller, axis=1), label="controller")
         plt.grid(color='grey', linestyle='-', linewidth=1, alpha=0.5)
         plt.ylim([0,1])
         plt.ylabel("Hidden State")
         plt.xlabel("Input Word")
         plt.xticks(xrange, input_sequence, fontsize=X_FONTSIZE, rotation=90)
-        for xtick, xticklabel in zip(plt.gca().get_xticklabels(), input_sequence):
-            if xticklabel == Y_type:
-                xtick.set_color('g')
-        plt.legend()
         plt.tight_layout()
         plt.savefig(os.path.join(savepath, ("experiment%s_trial%d_%depochs_%s_ranking_%s" % (experiment_name, trial_num, previous_trained_epochs, Y_type, model_name))))
         # plt.show()
@@ -266,12 +246,8 @@ if __name__ == '__main__':
     previous_trained_epochs = int(sys.argv[2])
     Y_type = sys.argv[3]
     model_name = sys.argv[4]
-    historypath = os.path.join(base_dir, "results", "variablefiller_gensymbolicstates_100000_1_testunseen_%s" % experiment_name, "variable_filler", "analysis_20200121")
-    if not os.path.exists(historypath):
-        os.makedirs(historypath)
-    savepath = os.path.join(base_dir, "figures_20200121")
-    if not os.path.exists(savepath):
-        os.makedirs(savepath)
+    historypath = os.path.join(base_dir, "results", "variablefiller_gensymbolicstates_100000_1_testunseen_%s" % experiment_name, "variable_filler", "analysis")
+    savepath = os.path.join(base_dir, "figures")
     input_sequence = input_sequences[experiment_name]
     trial_num = 0
     run_trial(experiment_name, previous_trained_epochs, Y_type, model_name, historypath, savepath, input_sequence, trial_num)

@@ -6,7 +6,7 @@ import argparse
 import ast
 import fnmatch
 import matplotlib
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
@@ -153,7 +153,7 @@ def plot_data(data, plot_index, experiment_title, experiment_title2, chance_rate
         plt.fill_between(x, min_smoothed, max_smoothed, color=color, alpha=FILL_BETWEEN_ALPHA)
     plt.axhline(y=chance_rate, label="Chance Rate", color='k', linestyle='--')
     if legend:
-        legend = plt.legend(loc="upper left", bbox_to_anchor=(1.03, 1.01))
+        plt.legend(loc='lower right', ncol=1)
     if num_smooth > 1:
         plt.xlabel("Train epoch (smoothed over %d epochs)" % (num_smooth), fontsize=AXES_FONTSIZE)
     else:
@@ -192,7 +192,7 @@ def plot_split_data(results_dir, template, trial_nums, experiment_title, experim
     for i in range(len(split_queries)):
         query = split_queries[i]
         axes[i].tick_params(axis='both')
-        axes[i].set_ylabel(split_queries[i], fontsize=AXES_FONTSIZE-8)
+        axes[i].set_ylabel(split_queries[i], fontsize=AXES_FONTSIZE-5)
         data = get_data_query(results_dir, template, trial_nums, query)
         for architecture in architectures:
             color = COLORS[architecture]
@@ -206,7 +206,7 @@ def plot_split_data(results_dir, template, trial_nums, experiment_title, experim
             axes[i].plot(x, max_smoothed, color=color, linewidth=LINEWIDTH, alpha=FILL_BETWEEN_ALPHA)
             axes[i].fill_between(x, min_smoothed, max_smoothed, color=color, alpha=FILL_BETWEEN_ALPHA)
         axes[i].axhline(y=chance_rate, label="Chance Rate", color='k', linestyle='--')
-    # axes[0].legend(bbox_to_anchor=(1, 1), loc='upper left', ncol=1)
+    axes[0].legend(loc='upper left', ncol=1)
     if num_smooth > 1:
         plt.xlabel("Train epoch (smoothed over %d epochs)" % (num_smooth), fontsize=AXES_FONTSIZE)
     else:

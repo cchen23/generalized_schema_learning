@@ -189,8 +189,6 @@ def plot_split_data(data, epochs_dict, plot_index, experiment_title, experiment_
         save, save_dir: If save=True, saves the plot to save_dir folder.
     """
     info_type_words = ["Train", "Test"]
-    # query_colors = {"QDessert":"#72C1F3","QDrink":"#1498EB","QEmcee":"#0E67A0","QFriend":"#0A4C76","QPoet":"#062A42","QSubject":"#050a30"}
-    #query_colors = {"QDessert":"#1f77b4", "QDrink":"#ff7f0e", "QEmcee":"#2ca02c", "QFriend":"#d62728", "QPoet":"#9467bd", "QSubject":"#8c564b"}
     query_colors = {"QDessert":"#006BA4", "QDrink":"#FF800E", "QEmcee":"#ABABAB", "QFriend":"#595959", "QPoet":"#5F9ED1", "QSubject":"#C85200"}
     info_type = "%s Accuracy" % info_type_words[plot_index]
     width = 0.3
