@@ -1,3 +1,7 @@
 .ftpconfig
+checkpoints*
+*.p
 *.png
 *.pyc
+*.sh
+

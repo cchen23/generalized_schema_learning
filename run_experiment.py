@@ -6,8 +6,12 @@ import numpy as np
 import os
 import pandas as pd
 import pickle
+import sys
 import tensorflow as tf
 import time
+
+import sys
+sys.path.append("/home/cc27/Thesis/generalized_schema_learning/architecture_models/")
 
 from data_util import generate_epoch
 from architecture_models.model import fast_weights_model
@@ -18,6 +22,7 @@ from architecture_models.custom_LSTMLN import lstmln_model
 from experiment_parameters import input_dims
 
 base_dir = directories.base_dir
+save_dir = directories.save_dir
 
 class parameters():
     def __init__(self):
@@ -49,15 +54,16 @@ class parameters():
         self.function = args.function
         self.input_dim = input_dims[self.experiment_name] # Length of input sequence, hard-coded in experiment_parameters.py.
         self.num_classes = DIMS # Num classes is vector dimension, since this is the size of vectors outputted by the networks.
-        self.batch_size = 4 # Batch size is small because some experiments have ~24 inputs per epoch.
+        self.batch_size = 112# Batch size is small because some experiments have ~24 inputs per epoch.
         self.data_dir = os.path.join(self.data_dir, self.experiment_name)
         self.ckpt_dir = os.path.join(base_dir, 'checkpoints', self.experiment_name, self.filler_type, self.model_name, 'trial%d' % self.trial_num)
+        print('ckpt_dir ', self.ckpt_dir)
         self.results_dir = os.path.join(self.results_dir, self.experiment_name, self.filler_type)
 
         if not os.path.exists(self.results_dir):
             os.makedirs(self.results_dir)
 
-def get_embedding(FLAGS):
+def get_embedding(FLAGS, data_dir=None):
     """Retrieves word embedding for experiment.
 
     Args:
@@ -68,8 +74,13 @@ def get_embedding(FLAGS):
 
     NOTE: Embeddings are created using experiment_creators/create_embedding.py.
     """
-    with open(os.path.join(FLAGS.data_dir, 'embedding.p')) as f:
-        embedding = pickle.load(f)
+    if data_dir:
+        print("Loading embedding from {data_dir}".format(data_dir=data_dir))
+        with open(os.path.join(data_dir, 'embedding.p')) as f:
+            embedding = pickle.load(f)
+    else:
+        with open(os.path.join(FLAGS.data_dir, 'embedding.p')) as f:
+            embedding = pickle.load(f)
     embedding_dims = len(embedding[0]['vector'])
     num_words = len(embedding)
     embedding_matrix = np.empty([num_words, embedding_dims])
@@ -174,6 +185,15 @@ def train(FLAGS):
         Results: Saves train and test accuracies in the FLAGS.results_dir folder.
         Split results: For certain experiments (hard-coded in this function), saves accuracies split by query type in the FLAGS.results_dir folder.
     """
+    print("*********************************")
+    print("*********************************")
+    print("STARTING TRAINING")
+    print("Flags:")
+    attributes = dir(FLAGS)
+    for attribute in attributes:
+        print(getattr(FLAGS, attribute))
+    print("Current time: ")
+    print(time.strftime("%y%m%d"), time.strftime("%H%M%S"))
     # Load the train/test datasets
     print("Loading datasets from directory %s:" % FLAGS.data_dir)
     if "curriculum" in FLAGS.experiment_name:
@@ -203,6 +223,28 @@ def train(FLAGS):
             test_X_drink_unseen, test_y_drink_unseen = load_data(os.path.join(FLAGS.data_dir, 'test_QDrink_unseen.p'))
             test_X_emcee_unseen, test_y_emcee_unseen = load_data(os.path.join(FLAGS.data_dir, 'test_QEmcee_unseen.p'))
             test_X_friend_unseen, test_y_friend_unseen = load_data(os.path.join(FLAGS.data_dir, 'test_QFriend_unseen.p'))
+    elif 'probestatisticsretention' in FLAGS.experiment_name:
+        test_data_X = dict()
+        test_data_y = dict()
+        test_data_X["test_QSubject"], test_data_y["test_QSubject"] = load_data(os.path.join(FLAGS.data_dir, 'test_QSubject.p'))
+        test_data_X["test_QPoet"], test_data_y["test_QPoet"] = load_data(os.path.join(FLAGS.data_dir, 'test_QPoet.p'))
+        test_data_X["test_QEmcee"], test_data_y["test_QEmcee"] = load_data(os.path.join(FLAGS.data_dir, 'test_QEmcee.p'))
+        test_data_X["test_QFriend"], test_data_y["test_QFriend"] = load_data(os.path.join(FLAGS.data_dir, 'test_QFriend.p'))
+
+        test_data_X["test_QSubject_unseen_indistribution"], test_data_y["test_QSubject_unseen_indistribution"] = load_data(os.path.join(FLAGS.data_dir, 'test_QSubject_unseen_indistribution.p'))
+        test_data_X["test_QPoet_unseen_indistribution"], test_data_y["test_QPoet_unseen_indistribution"] = load_data(os.path.join(FLAGS.data_dir, 'test_QPoet_unseen_indistribution.p'))
+        test_data_X["test_QEmcee_unseen_indistribution"], test_data_y["test_QEmcee_unseen_indistribution"] = load_data(os.path.join(FLAGS.data_dir, 'test_QEmcee_unseen_indistribution.p'))
+        test_data_X["test_QFriend_unseen_indistribution"], test_data_y["test_QFriend_unseen_indistribution"] = load_data(os.path.join(FLAGS.data_dir, 'test_QFriend_unseen_indistribution.p'))
+
+        test_data_X["test_QSubject_unseen_outofdistribution"], test_data_y["test_QSubject_unseen_outofdistribution"] = load_data(os.path.join(FLAGS.data_dir, 'test_QSubject_unseen_outofdistribution.p'))
+        test_data_X["test_QPoet_unseen_outofdistribution"], test_data_y["test_QPoet_unseen_outofdistribution"] = load_data(os.path.join(FLAGS.data_dir, 'test_QPoet_unseen_outofdistribution.p'))
+        test_data_X["test_QEmcee_unseen_outofdistribution"], test_data_y["test_QEmcee_unseen_outofdistribution"] = load_data(os.path.join(FLAGS.data_dir, 'test_QEmcee_unseen_outofdistribution.p'))
+        test_data_X["test_QFriend_unseen_outofdistribution"], test_data_y["test_QFriend_unseen_outofdistribution"] = load_data(os.path.join(FLAGS.data_dir, 'test_QFriend_unseen_outofdistribution.p'))
+
+        test_data_X["test_QSubject_unseen_middistribution"], test_data_y["test_QSubject_unseen_middistribution"] = load_data(os.path.join(FLAGS.data_dir, 'test_QSubject_unseen_middistribution.p'))
+        test_data_X["test_QPoet_unseen_middistribution"], test_data_y["test_QPoet_unseen_middistribution"] = load_data(os.path.join(FLAGS.data_dir, 'test_QPoet_unseen_middistribution.p'))
+        test_data_X["test_QEmcee_unseen_middistribution"], test_data_y["test_QEmcee_unseen_middistribution"] = load_data(os.path.join(FLAGS.data_dir, 'test_QEmcee_unseen_middistribution.p'))
+        test_data_X["test_QFriend_unseen_middistribution"], test_data_y["test_QFriend_unseen_middistribution"] = load_data(os.path.join(FLAGS.data_dir, 'test_QFriend_unseen_middistribution.p'))
 
     embedding = get_embedding(FLAGS)
 
@@ -212,9 +254,10 @@ def train(FLAGS):
         start_time = time.time()
 
         # Start training. If applicable, load previous results.
-        if previous_trained_epochs > 0:
+        if previous_trained_epochs > 0 and os.path.exists(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d.p' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num))):
             with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d.p' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num)), 'rb') as previous_results_file:
-                train_epoch_accuracy, test_epoch_accuracy, train_epoch_loss, test_epoch_loss, train_epoch_gradient_norm = pickle.load(previous_results_file)
+                previous_results = pickle.load(previous_results_file)
+                train_epoch_accuracy, test_epoch_accuracy, train_epoch_loss, test_epoch_loss, train_epoch_gradient_norm = previous_results["train_accuracy"], previous_results["test_accuracy"], previous_results["train_loss"], previous_results["test_loss"], previous_results["train_gradient_norm"]
             if 'QSubjectQFriend' in FLAGS.experiment_name or "curriculum" in FLAGS.experiment_name:
                 with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d_split.p' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num)), 'rb') as previous_results_file_split:
                     previous_results_split = pickle.load(previous_results_file_split)
@@ -228,6 +271,10 @@ def train(FLAGS):
                     with open(os.path.join(FLAGS.results_dir, "%s_results_%depochs_trial%d_unseen.p" % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num)), "rb") as previous_results_file_unseen:
                         previous_results_unseen = pickle.load(previous_results_file_unseen)
                         test_epoch_accuracies_unseen, test_epoch_losses_unseen = previous_results_unseen["accuracies"], previous_results_unseen["losses"]
+            elif 'probestatisticsretention' in FLAGS.experiment_name:
+                with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d_tests.p' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num)), 'rb') as previous_results_file:
+                    previous_results = pickle.load(previous_results_file)
+                    test_epoch_accuracies, test_epoch_losses = previous_results['accuracies'], previous_results['losses']
         else:
                 train_epoch_loss = []; test_epoch_loss = []
                 train_epoch_accuracy = []; test_epoch_accuracy = []
@@ -241,6 +288,10 @@ def train(FLAGS):
                     if "withunseentestfillers" in FLAGS.experiment_name:
                         test_epoch_accuracies_unseen = {'QDrink':[], 'QDessert':[], 'QEmcee':[], 'QFriend':[], 'QPoet':[], 'QSubject':[]}
                         test_epoch_losses_unseen = {'QDrink':[], 'QDessert':[], 'QEmcee':[], 'QFriend':[], 'QPoet':[], 'QSubject':[]}
+                elif 'probestatisticsretention' in  FLAGS.experiment_name:
+                    test_epoch_accuracies = {key:[] for key in test_data_X.keys()}
+                    test_epoch_losses = {key:[] for key in test_data_X.keys()}
+
         for train_epoch_num, train_epoch in enumerate(generate_epoch(train_X, train_y, FLAGS.num_epochs, FLAGS, embedding)):
             test_start_time = time.time()
             train_epoch_num += 1 # Use 1-based indexing for train epoch numbering.
@@ -317,6 +368,12 @@ def train(FLAGS):
                     test_epoch_losses_unseen['QPoet'].append(mean_test_batch_loss_poet_unseen)
                     test_epoch_accuracies_unseen['QSubject'].append(mean_test_batch_accuracy_subject_unseen)
                     test_epoch_losses_unseen['QSubject'].append(mean_test_batch_loss_subject_unseen)
+            elif 'probestatisticsretention' in FLAGS.experiment_name:
+                for key in test_data_X.keys():
+                    mean_test_batch_accuracy, mean_test_batch_loss = get_meantestinfo(sess, test_data_X[key], test_data_y[key], FLAGS, model, embedding)
+                    test_epoch_accuracies[key].append(mean_test_batch_accuracy)
+                    test_epoch_losses[key].append(mean_test_batch_loss)
+
             print ('Epoch: [%i/%i] time: %.4f, test loss: %.7f,'
                     ' test acc: %.7f' % (train_epoch_num, FLAGS.num_epochs,
                         time.time() - test_start_time, test_epoch_loss[-1],
@@ -329,6 +386,7 @@ def train(FLAGS):
                 checkpoint_path = os.path.join(FLAGS.ckpt_dir, "%s" % (FLAGS.model_name))
                 print("Saving the model and results at epoch %d." % (train_epoch_num + previous_trained_epochs))
                 model.saver.save(sess, checkpoint_path, global_step=(train_epoch_num + previous_trained_epochs))
+                print('saving results to ', os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d.p' % (FLAGS.model_name, train_epoch_num + previous_trained_epochs, FLAGS.trial_num)))
                 with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d.p' % (FLAGS.model_name, train_epoch_num + previous_trained_epochs, FLAGS.trial_num)), 'wb') as f:
                     pickle.dump({"train_accuracy":train_epoch_accuracy, "test_accuracy":test_epoch_accuracy, "train_loss":train_epoch_loss, "test_loss":test_epoch_loss, "train_gradient_norm":train_epoch_gradient_norm}, f)
                 if 'QSubjectQFriend' in FLAGS.experiment_name or "curriculum" in FLAGS.experiment_name:
@@ -340,8 +398,44 @@ def train(FLAGS):
                     if "withunseentestfillers" in FLAGS.experiment_name:
                         with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d_unseen.p' % (FLAGS.model_name, train_epoch_num + previous_trained_epochs, FLAGS.trial_num)), 'wb') as f:
                             pickle.dump({'accuracies':test_epoch_accuracies_unseen, 'losses':test_epoch_losses_unseen}, f)
+                elif "probestatisticsretention" in FLAGS.experiment_name:
+                    with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d_tests.p' % (FLAGS.model_name, train_epoch_num + previous_trained_epochs, FLAGS.trial_num)), 'wb') as f:
+                        pickle.dump({"accuracies":test_epoch_accuracies, "losses":test_epoch_losses}, f)
 
-def test_split(FLAGS):
+def test_split(FLAGS, embedding_dir=None):
+    """Tests the model. (Originally written for split test sets.)
+    """
+    # Load the train/test datasets
+    print("Loading datasets from directory %s:" % FLAGS.data_dir)
+    queries = ["QSubject", "QPoet", "QDessert", "QDrink", "QEmcee", "QFriend"]
+    test_Xs = {}
+    test_ys = {}
+    testnames = []
+    for query in queries:
+        testset_name = "test_%s" % (query)
+        test_X, test_y = load_data(os.path.join(FLAGS.data_dir, "%s.p" % testset_name))
+        test_Xs[testset_name] = test_X
+        test_ys[testset_name] = test_y
+        testnames.append(testset_name)
+    embedding = get_embedding(FLAGS, embedding_dir)
+
+    with tf.Session() as sess:
+        # Load the model
+        model, previous_trained_epochs = create_model(sess, FLAGS)
+        start_time = time.time()
+        test_epoch_accuracies_split = {}
+        test_epoch_losses_split = {}
+        for testset_name in testnames:
+            test_X = test_Xs[testset_name]
+            test_y = test_ys[testset_name]
+            accuracy, loss = get_meantestinfo(sess, test_X, test_y, FLAGS, model, embedding)
+            test_epoch_accuracies_split[testset_name] = accuracy
+            test_epoch_losses_split[testset_name] = loss
+        # Dump results.
+        with open(os.path.join(FLAGS.results_dir, "{model_name}_shuffled_{previous_trained_epochs}epochs_testresults_trial{trial_num}_oldembedding{old_embedding}.p".format(model_name=FLAGS.model_name, previous_trained_epochs=previous_trained_epochs, trial_num=FLAGS.trial_num, old_embedding=(embedding_dir==None))), "wb") as f:
+            pickle.dump({"accuracy":test_epoch_accuracies_split, "loss":test_epoch_losses_split}, f)
+
+def test_shuffled_split(FLAGS, embedding_dir=None):
     """Tests the model. (Originally written for split test sets.)
     """
     # Load the train/test datasets
@@ -360,7 +454,7 @@ def test_split(FLAGS):
                 test_Xs[testset_name] = test_X
                 test_ys[testset_name] = test_y
                 testnames.append(testset_name)
-    embedding = get_embedding(FLAGS)
+    embedding = get_embedding(FLAGS, embedding_dir)
 
     with tf.Session() as sess:
         # Load the model
@@ -375,7 +469,7 @@ def test_split(FLAGS):
             test_epoch_accuracies_split[testset_name] = accuracy
             test_epoch_losses_split[testset_name] = loss
         # Dump results.
-        with open(os.path.join(FLAGS.results_dir, "%s_shuffled_%depochs_testresults_trial%d.p" % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num)), "wb") as f:
+        with open(os.path.join(FLAGS.results_dir, "{model_name}_shuffled_{previous_trained_epochs}epochs_testresults_trial{trial_num}_{embedding_dir}embedding.p".format(model_name=FLAGS.model_name, previous_trained_epochs=previous_trained_epochs, trial_num=FLAGS.trial_num, embedding_dir=embedding_dir)), "wb") as f:
             pickle.dump({"accuracy":test_epoch_accuracies_split, "loss":test_epoch_losses_split}, f)
 
 def test(FLAGS, test_filename):
@@ -441,7 +535,7 @@ def test(FLAGS, test_filename):
         with open(os.path.join(predictions_dir, 'test_analysis_results_%s_%depochs_trial%d_%s_50examples' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename)), 'wb') as f:
             pickle.dump(analysis_results, f)
 
-def analyze(FLAGS, test_filename):
+def analyze(FLAGS, test_filename, MAX_TEST_BATCHES = 100):
    """Perform analysis on specified test set. Used for decoding experiments.
 
    NOTE: Currently works for select models: NTM2, RNN-LN-FW, LSTM-LN.
@@ -458,6 +552,8 @@ def analyze(FLAGS, test_filename):
    print("Running controller and external memory buffer analysis")
    print("Loading datasets from directory %s:" % FLAGS.data_dir)
    test_X, test_y = load_data(os.path.join(FLAGS.data_dir, test_filename))
+   FLAGS.batch_size = 100
+   print(test_X.shape, test_y.shape)
    embedding = get_embedding(FLAGS)
    with tf.Session() as sess:
 
@@ -475,7 +571,9 @@ def analyze(FLAGS, test_filename):
        first_epoch = True
        for test_epoch_num, test_epoch in enumerate(generate_epoch(test_X, test_y, num_epochs=1, FLAGS=FLAGS, embedding=embedding)):
            for test_batch_num, (batch_X, batch_y, batch_embedding) in enumerate(test_epoch):
-               print(test_batch_num)
+               print("test batch num:", test_batch_num)
+               if test_batch_num > MAX_TEST_BATCHES:
+                   break
                loss, accuracy, controller_history, memory_history = model.step(sess, batch_X, batch_y, batch_embedding, FLAGS.l, FLAGS.e, run_option="analyze")
                test_batch_loss.append(loss)
                test_batch_accuracy.append(accuracy)
@@ -483,10 +581,11 @@ def analyze(FLAGS, test_filename):
                    first_epoch = False
                    gate_histories = controller_history[0]
                    hidden_histories = controller_history[1]
-                   memory_histories = memory_history[0]
                    if FLAGS.model_name in ["NTM2"]:
+                       memory_histories = memory_history[0]
                        read_weights_histories = memory_history[1]
                        write_weights_histories = memory_history[2]
+                   memory_histories = memory_history
                    output_vectors = batch_y
                    input_vectors = batch_X
                    batch_embeddings = batch_embedding
@@ -545,7 +644,8 @@ def analyze(FLAGS, test_filename):
                np.savez(f, read_weights_histories)
            with open(os.path.join(predictions_dir, 'write_weights_histories_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
                np.savez(f, write_weights_histories)
-def probe_statistics(FLAGS, test_filename):
+
+def probe_statistics(FLAGS, test_filename, MAX_TEST_BATCHES=5, set_to_zero=False):
    """Perform analysis on specified test set. Used for decoding experiments.
 
    NOTE: Currently works for select models: NTM2, RNN-LN-FW, LSTM-LN.
@@ -559,7 +659,7 @@ def probe_statistics(FLAGS, test_filename):
    # Load the train/test datasets
    if FLAGS.model_name not in ["NTM2", "LSTM-LN", "RNN-LN-FW", "RNN-LN"]:
        raise ArgumentError("Analysis currently works only with RNN, LSTM, Fast Weights, and reduced NTM.")
-   print("Running controller and external memory buffer analysis")
+   print("Running probe statistics analysis")
    print("Loading datasets from directory %s:" % FLAGS.data_dir)
    test_X, test_y = load_data(os.path.join(FLAGS.data_dir, test_filename))
    embedding = get_embedding(FLAGS)
@@ -577,50 +677,58 @@ def probe_statistics(FLAGS, test_filename):
        predictions = []
        responses = []
        first_epoch = True
+       logits_list = []
        for test_epoch_num, test_epoch in enumerate(generate_epoch(test_X, test_y, num_epochs=1, FLAGS=FLAGS, embedding=embedding)):
            for test_batch_num, (batch_X, batch_y, batch_embedding) in enumerate(test_epoch):
+               if test_batch_num > MAX_TEST_BATCHES:
+                   continue
                print(test_batch_num)
+               if set_to_zero:
+                   batch_X[:,:-2,:] = 0.0
                loss, accuracy, controller_history, memory_history = model.step(sess, batch_X, batch_y, batch_embedding, FLAGS.l, FLAGS.e, run_option="analyze")
                test_batch_loss.append(loss)
                test_batch_accuracy.append(accuracy)
-               if first_epoch:
-                   first_epoch = False
-                   output_vectors = batch_y
-                   input_vectors = batch_X
-                   batch_embeddings = batch_embedding
-               else:
-                   output_vectors = np.concatenate((output_vectors, batch_y), axis=0)
-                   input_vectors = np.concatenate((input_vectors, batch_X), axis=0)
-                   batch_embeddings = np.concatenate((batch_embeddings, batch_embedding), axis=0)
+#               if first_epoch:
+#                   first_epoch = False
+#                   output_vectors = batch_y
+#                   input_vectors = batch_X
+#                   batch_embeddings = batch_embedding
+#               else:
+#                   output_vectors = np.concatenate((output_vectors, batch_y), axis=0)
+#                   input_vectors = np.concatenate((input_vectors, batch_X), axis=0)
+#                   batch_embeddings = np.concatenate((batch_embeddings, batch_embedding), axis=0)
                logits = model.logits.eval(feed_dict={model.X: batch_X, model.embedding: batch_embedding,
                    model.l: FLAGS.l, model.e: FLAGS.e})
-               for i in range(FLAGS.batch_size):
-                   test_input = [embedding_util.get_corpus_index(vector, batch_embedding) for vector in batch_X[i]]
-                   prediction = embedding_util.get_corpus_index(logits[i], batch_embedding)
-                   response = embedding_util.get_corpus_index(batch_y[i], batch_embedding)
-                   inputs.append(test_input)
-                   predictions.append(prediction)
-                   responses.append(response)
+               logits_list.append(logits)
+#               for i in range(FLAGS.batch_size):
+#                   test_input = [embedding_util.get_corpus_index(vector, batch_embedding) for vector in batch_X[i]]
+#                   prediction = embedding_util.get_corpus_index(logits[i], batch_embedding)
+#                   response = embedding_util.get_corpus_index(batch_y[i], batch_embedding)
+#                   inputs.append(test_input)
+#                   predictions.append(prediction)
+#                   responses.append(response)
        print('Test set name %s' % str(test_filename))
        print ('Test time: %.4f, test loss: %.7f,'
            ' test acc: %.7f' % (time.time() - test_start_time, np.mean(test_batch_loss),
            np.mean(test_batch_accuracy)))
-       analysis_results = pd.DataFrame(
-                       {'inputs':inputs,
-                       'predictions':predictions,
-                       'responses':responses
-                       })
-       predictions_dir = os.path.join(FLAGS.results_dir, 'probe_statistics_%s' % test_filename.replace(".p", ""))
+#       analysis_results = pd.DataFrame(
+#                       {'inputs':inputs,
+#                       'predictions':predictions,
+#                       'responses':responses
+#                       })
+       predictions_dir = os.path.join(FLAGS.results_dir, 'probe_statistics_{test_filename}_settozero{set_to_zero}'.format(set_to_zero=set_to_zero, test_filename=test_filename.replace(".p", "")))
        if not os.path.exists(predictions_dir):
            os.makedirs(predictions_dir)
-       with open(os.path.join(predictions_dir, 'test_analysis_results_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename)), 'wb') as f:
-           pickle.dump(analysis_results, f)
-       with open(os.path.join(predictions_dir, 'batch_embeddings_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
-           np.savez(f, batch_embeddings)
-       with open(os.path.join(predictions_dir, 'input_vectors_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
-           np.savez(f, input_vectors)
-       with open(os.path.join(predictions_dir, 'output_vectors_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
-           np.savez(f, output_vectors)
+#       with open(os.path.join(predictions_dir, 'test_analysis_results_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename)), 'wb') as f:
+#           pickle.dump(analysis_results, f)
+       with open(os.path.join(predictions_dir, 'logits_{model_name}_{num_epochs}epochs_trial{trial_num}_{test_filename}_settozero{set_to_zero}'.format(model_name=FLAGS.model_name, num_epochs=previous_trained_epochs, trial_num=FLAGS.trial_num, test_filename=test_filename, set_to_zero=set_to_zero)), 'wb') as f:
+           pickle.dump(logits_list, f)
+#       with open(os.path.join(predictions_dir, 'batch_embeddings_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
+#           np.savez(f, batch_embeddings)
+#       with open(os.path.join(predictions_dir, 'input_vectors_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
+#           np.savez(f, input_vectors)
+#       with open(os.path.join(predictions_dir, 'output_vectors_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
+#           np.savez(f, output_vectors)
 
 if __name__ == '__main__':
 
@@ -638,6 +746,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--regime', help='Required if running curriculum experiment.', choices=["SUBJECT", "POET", "COMBINED"])
     parser.add_argument('--trial_num', help='Integer label for trial.', type=int, required=True)
+    parser.add_argument('--embedding_dir', help='Directory from which to get embeddings.')
+    parser.add_argument('--set_to_zero', help='if True, sets inputs up to padding word to zero in probe_statistics')
     args=parser.parse_args()
 
     # Choose experiment.
@@ -652,6 +762,10 @@ if __name__ == '__main__':
     print("Results directory: %s" % FLAGS.results_dir)
     print("*******************************************************************")
 
+    if 'variablefiller' in args.exp_name:
+        print('reducing batch size to 4')
+        FLAGS.batch_size = 4
+
     if args.function == 'train':
         FLAGS.num_epochs = int(args.num_epochs)
         FLAGS.save_every =  max(1, FLAGS.num_epochs//4)
@@ -665,8 +779,10 @@ if __name__ == '__main__':
         test_filename = args.test_filename
         analyze(FLAGS, test_filename)
     elif args.function == "test_split":
-        test_split(FLAGS)
+        test_split(FLAGS, embedding_dir=args.embedding_dir)
     elif args.function == 'probe_statistics':
         test_filename = args.test_filename
         print("test filename", test_filename)
-        probe_statistics(FLAGS, test_filename)
+        set_to_zero = args.set_to_zero == 'True'
+        print('set_to_zero', set_to_zero)
+        probe_statistics(FLAGS, test_filename, set_to_zero=set_to_zero)

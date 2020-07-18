@@ -208,9 +208,15 @@ def run_trial(experiment_name, previous_trained_epochs, model_name, historypath,
     xrange = range(input_sequence_length)
     #color_dict = {"Dessert":"#1f77b4", "Drink":"#ff7f0e", "Emcee":"#2ca02c", "Friend":"#d62728", "Poet":"#9467bd", "Subject":"#8c564b"}
     color_dict = {"Dessert":"#006BA4", "Drink":"#FF800E", "Emcee":"#ABABAB", "Friend":"#595959", "Poet":"#5F9ED1", "Subject":"#C85200"}
+    line_style_dict = {"Dessert":"solid", "Drink":"dotted", "Emcee":"dashed", "Friend":"solid", "Poet":"dotted", "Subject":"dashed"}
+    line_width_dict = {"Dessert":0.8, "Drink":0.8, "Emcee":0.8, "Friend":1.5, "Poet":1.5, "Subject":1.5}
+    line_marker_dict = {"Dessert":".", "Drink":".", "Emcee":".", "Friend":".", "Poet":".", "Subject":"."}
     # Plot scores.
     for Y_type in ["Dessert", "Drink", "Emcee", "Friend", "Poet", "Subject"]:
         Y_type_color = color_dict[Y_type]
+        Y_type_line_style = line_style_dict[Y_type]
+        Y_type_line_width = line_width_dict[Y_type]
+        Y_line_marker = line_marker_dict[Y_type]
         scores_controller, W_ridges_controller = get_scores_byword(get_one_data, "controller", num_timesteps, train_indices, test_indices, Y_type, batch_embeddings, test_info, input_vectors, output_vectors, controller_histories_hiddenstate, memory_histories, experiment_name)
         print(os.path.join(savepath, "experiment%s_trial%d_%depochs_%s_ranking_%s_controller_W_ridges" % (experiment_name, trial_num, previous_trained_epochs, Y_type, model_name)))
         with open(os.path.join(savepath, "experiment%s_trial%d_%depochs_%s_ranking_%s_controller_W_ridges" % (experiment_name, trial_num, previous_trained_epochs, Y_type, model_name)), "wb") as f:
@@ -221,28 +227,28 @@ def run_trial(experiment_name, previous_trained_epochs, model_name, historypath,
             with open(os.path.join(savepath, "experiment%s_trial%d_%depochs_%s_ranking_%s_memory_W_ridges" % (experiment_name, trial_num, previous_trained_epochs, Y_type, model_name)), "wb") as f:
                 pickle.dump(W_ridges_memory, f)
             plt.subplot(211)
-            plt.errorbar(xrange, np.average(scores_memory, axis=1), label=Y_type, color=Y_type_color)
+            plt.errorbar(xrange, np.average(scores_memory, axis=1), label=Y_type, color=Y_type_color, linestyle=Y_type_line_style, linewidth=Y_type_line_width, marker=Y_line_marker)
             if "NTM2" in model_name:
                 plt.ylabel("External Memory")
             elif "RNN-LN-FW" in model_name:
                 plt.ylabel("FW Matrix")
             plt.grid(color='grey', linestyle='-', linewidth=1, alpha=0.5)
             plt.subplot(212)
-            plt.errorbar(xrange, np.average(scores_controller, axis=1), label=Y_type, color=Y_type_color)
+            plt.errorbar(xrange, np.average(scores_controller, axis=1), label=Y_type, color=Y_type_color, linestyle=Y_type_line_style, linewidth=Y_type_line_width, marker=Y_line_marker)
         else:
-            plt.errorbar(xrange, np.average(scores_controller, axis=1), label=Y_type, color=Y_type_color)
+            plt.errorbar(xrange, np.average(scores_controller, axis=1), label=Y_type, color=Y_type_color, linestyle=Y_type_line_style, linewidth=Y_type_line_width, marker=Y_line_marker)
             plt.grid(color='grey', linestyle='-', linewidth=1, alpha=0.5)
         for i in xrange:
             if input_sequence[i] == Y_type:
                 if plot_memory_and_controller:
                     plt.subplot(211)
-                    plt.scatter([i], np.average(scores_memory, axis=1)[i], color=Y_type_color)
+                    plt.scatter([i], np.average(scores_memory, axis=1)[i], color=Y_type_color, linestyle=Y_type_line_style, linewidth=Y_type_line_width, marker=Y_line_marker)
                     # plt.errorbar(xrange, np.average(scores_memory, axis=1), yerr = np.std(scores_memory, axis=1))
                     plt.subplot(212)
-                    plt.scatter([i], np.average(scores_controller, axis=1)[i], color=Y_type_color)
+                    plt.scatter([i], np.average(scores_controller, axis=1)[i], color=Y_type_color, linestyle=Y_type_line_style, linewidth=Y_type_line_width, marker=Y_line_marker)
                     # plt.errorbar(xrange, np.average(scores_controller, axis=1), yerr = np.std(scores_controller, axis=1))
                 else:
-                    plt.scatter([i], np.average(scores_controller, axis=1)[i], color=Y_type_color)
+                    plt.scatter([i], np.average(scores_controller, axis=1)[i], color=Y_type_color, linestyle=Y_type_line_style, linewidth=Y_type_line_width, marker=Y_line_marker)
                     # plt.errorbar(xrange, np.average(scores_controller, axis=1), yerr = np.std(scores_controller, axis=1))
     if plot_memory_and_controller:
         plt.subplot(211)
@@ -265,9 +271,9 @@ def run_trial(experiment_name, previous_trained_epochs, model_name, historypath,
     plt.ylim([0,1])
     plt.ylabel("Hidden State")
     plt.xlabel("Input Word")
-    # legend = plt.legend(ncol=2, bbox_to_anchor=(1, -1))
-    # plt.savefig(os.path.join(savepath, ("experiment%s_trial%d_%depochs_%s_ranking" % (experiment_name, trial_num, previous_trained_epochs, model_name))), bbox_extra_artists=(legend,), bbox_inches='tight')
+    #legend = plt.legend(ncol=2, bbox_to_anchor=(1, -1))
     plt.savefig(os.path.join(savepath, ("experiment%s_trial%d_%depochs_%s_ranking" % (experiment_name, trial_num, previous_trained_epochs, model_name))), bbox_inches='tight', dpi=1200)
+    #plt.savefig(os.path.join(savepath, 'legend'))
     plt.close()
 
 if __name__ == '__main__':

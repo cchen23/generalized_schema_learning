@@ -22,6 +22,5 @@ source activate thesis
 module load cudnn/cuda-9.0/7.0.3
 module load cudatoolkit/9.0
 
-python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py QSubjectQFriend 2 Subject RNN-LN-FW
-
+python /home/cc27/Thesis/generalized_schema_learning/analysis/decode_history.py AllQs 30000 Subject RNN-LN-FW
 echo "Finished"

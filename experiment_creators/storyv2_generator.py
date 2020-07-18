@@ -75,13 +75,13 @@ def generate_onefillerperrole():
 """
 train3roles_testnewrole
 """
-def generate_train3roles_testnewrole(num_persons_per_category):
+def generate_train3roles_testnewrole(num_persons_per_category, filler_distribution=None):
     NUM_DIMS = 50
     NUM_TRAIN_EXAMPLES = 24000
     NUM_TEST_EXAMPLES = 120
     NUM_UNSEEN_TEST_EXAMPLES = 120
     NUM_UNSEEN_FILLERS = 100
-    SAVE_PATH = os.path.join("/", "home", "cc27", "Thesis", "generalized_schema_learning", "data", "generate_train3roles_testnewrole_withunseentestfillers_%dpersonspercategory_%dtrain_%dtest" % (num_persons_per_category, NUM_TRAIN_EXAMPLES, NUM_TEST_EXAMPLES))
+    SAVE_PATH = os.path.join("/", "home", "cc27", "Thesis", "generalized_schema_learning", "data", "generate_train3roles_testnewrole_withunseentestfillers_%dpersonspercategory_%dtrain_%dtest_%sfillers" % (num_persons_per_category, NUM_TRAIN_EXAMPLES, NUM_TEST_EXAMPLES, filler_distribution))
 
     STORY_FRAME = "begin subject sit subject friend announce emcee perform poet consume dessert drink goodbye".split(" ")
     QUESTIONS = ["QEmcee", "QFriend", "QPoet", "QSubject", "QDessert", "QDrink"]
@@ -203,7 +203,11 @@ def generate_train3roles_testnewrole(num_persons_per_category):
         word_embedding = {}
         word_embedding['index'] = i
         word_embedding['word'] = word
-        word_embedding['vector'] = create_word_vector()
+        if word in person_fillers or word in person_fillers_unseenintraining:
+            print(word, filler_distribution)
+            word_embedding['vector'] = create_word_vector(filler_distribution)
+        else:
+           word_embedding['vector'] = create_word_vector()
         embedding.append(word_embedding)
 
     with open(os.path.join(SAVE_PATH, "embedding.p"), "wb") as f:
@@ -212,13 +216,15 @@ def generate_train3roles_testnewrole(num_persons_per_category):
     with open(os.path.join(SAVE_PATH, "wordslist.p"), "wb") as f:
         pickle.dump(wordslist, f)
 
-def generate_train3roles_testnewrole_probestatistics(num_persons_per_category):
+def generate_train3roles_testnewrole_probestatistics(num_persons_per_category, filler_distribution=None):
     NUM_DIMS = 50
     NUM_TRAIN_EXAMPLES = 24000
     NUM_TEST_EXAMPLES = 120
     NUM_UNSEEN_TEST_EXAMPLES = 120
     NUM_UNSEEN_FILLERS = 100
     SAVE_PATH = os.path.join("/", "home", "cc27", "Thesis", "generalized_schema_learning", "data", "generate_train3roles_testnewrole_withunseentestfillers_%dpersonspercategory_%dtrain_%dtest" % (num_persons_per_category, NUM_TRAIN_EXAMPLES, NUM_TEST_EXAMPLES))
+    if filler_distribution:
+        SAVE_PATH = os.path.join("/", "home", "cc27", "Thesis", "generalized_schema_learning", "data", "generate_train3roles_testnewrole_withunseentestfillers_%dpersonspercategory_%dtrain_%dtest_%sfillers" % (num_persons_per_category, NUM_TRAIN_EXAMPLES, NUM_TEST_EXAMPLES, filler_distribution))
 
     STORY_FRAME = "begin subject sit subject friend announce emcee perform poet consume dessert drink goodbye".split(" ")
     QUESTIONS = ["QEmcee", "QFriend", "QPoet", "QSubject", "QDessert", "QDrink"]
@@ -495,4 +501,6 @@ if __name__ == '__main__':
     #shuffled_2 = "begin subject sit subject friend perform poet announce emcee consume dessert drink goodbye".split(" ")
     #generate_train3roles_testnewrole_withunseentestfillers_shuffledtestset(shuffled_1, 1, 10)
     #generate_train3roles_testnewrole_withunseentestfillers_shuffledtestset(shuffled_2, 2, 10)
-    generate_train3roles_testnewrole_probestatistics(1000)
+    #generate_train3roles_testnewrole_probestatistics(1000)
+    #generate_train3roles_testnewrole(1000, "add05")
+    generate_train3roles_testnewrole_probestatistics(1000, "add05")

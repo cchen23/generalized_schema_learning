@@ -68,7 +68,7 @@ def generate_batch(X, y, FLAGS, embedding):
             DIMS = 50
             batchX, batchy = X[start_index:end_index].squeeze(), y[start_index:end_index].squeeze()
             if FLAGS.function not in ["analyze", "probe_statistics"]: # Don't randomly shift inputs for decoding analysis.
-                print("flag function", FLAGS.function)
+                #print("flag function", FLAGS.function)
                 batchX = shift_inputs(batchX, FLAGS.experiment_name)
             embeddingX, embeddingy = embedding[batchX], embedding[batchy]
             epoch_embedding = embedding
@@ -110,8 +110,10 @@ def shift_inputs(batchX, experiment_name):
         padding_index = 158
     elif experiment_name == "generate_train3roles_testnewrole_withunseentestfillers_100personspercategory_24000train_120test":
         padding_index = 518
-    elif experiment_name == "generate_train3roles_testnewrole_withunseentestfillers_1000personspercategory_24000train_120test":
+    elif experiment_name in ["generate_train3roles_testnewrole_withunseentestfillers_1000personspercategory_24000train_120test", "generate_train3roles_testnewrole_withunseentestfillers_1000personspercategory_24000train_120test_add05fillers"]:
         padding_index = 4118
+    elif "probestatisticsretention" in experiment_name:
+        padding_index = 16017
     else:
         raise ArgumentError("Unsupported experiment name.")
     batch_size = batchX.shape[0]
