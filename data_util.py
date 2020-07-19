@@ -92,7 +92,7 @@ def shift_inputs(batchX, experiment_name):
         padding_index = 27
     elif experiment_name == "fixedfiller_gensymbolicstates_100000_1_testunseen_AllQs":
         padding_index = 27
-    elif experiment_name == "probe_role_statistic_recall":
+    elif experiment_name in ["probe_role_statistic_recall", "probe_role_statistic_recall_with_context"]:
         padding_index = 5017
     else:
         raise Exception("Unsupported experiment name.")
