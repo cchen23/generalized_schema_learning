@@ -141,6 +141,8 @@ def load_data(data_path):
     with open(data_path, 'rb') as f:
         X, y = pickle.load(f)
     print(data_path, "X shape: ", np.shape(X), "y shape", np.shape(y))
+    X = np.array(X, dtype=int)
+    y = np.array(y, dtype=int)
     return X, y
 
 def get_meantestinfo(sess, test_X, test_y, FLAGS, model, embedding):
