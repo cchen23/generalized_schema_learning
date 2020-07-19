@@ -40,7 +40,7 @@ from tensorflow.python.util import (
     nest,
 )
 
-from core_rnn_cell_impl import _linear
+from architecture_models.core_rnn_cell_impl import _linear
 
 # LN funcition
 def ln(inputs, epsilon=1e-5, scope=None):

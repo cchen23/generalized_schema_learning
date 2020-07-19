@@ -9,7 +9,7 @@ import tensorflow as tf
 sys.path.append("../")
 import embedding_util
 
-from custom_GRU import (
+from architecture_models.custom_GRU import (
     ln,
 )
 
