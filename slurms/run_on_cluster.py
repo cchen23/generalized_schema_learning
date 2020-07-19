@@ -33,7 +33,7 @@ if args.function == "train":
     for trial_num in args.trial_nums:
         for model_name_and_num_epoch in args.model_names_and_num_epochs:
             output = "/home/cc27/Thesis/generalized_schema_learning/slurms/outputs/train_experiment{experiment_name}_{model_name}_{function}_trial{trial_num}_start{datetime}_%j.txt"
-            cmd = sb_cmd + "\npython -u {script} --function={function} --experiment_name={experiment_name} --filler_type={filler_type} --model_name={model_name} --trial_num={trial_num} --num_epochs={num_epochs}"
+            cmd = sb_cmd + "\npython -u {script} --function={function} --exp_name={experiment_name} --filler_type={filler_type} --model_name={model_name} --trial_num={trial_num} --num_epochs={num_epochs}"
             model_name, num_epochs = model_name_and_num_epoch.split('_')
             this_output = output.format(model_name=model_name, function=args.function, experiment_name=args.experiment_name, datetime=time.strftime("%y%m%d") + "_" + time.strftime("%H%M%D").replace("/", ""), trial_num=trial_num)
             sbproc = subprocess.Popen(["sbatch",
@@ -57,7 +57,7 @@ elif args.function == "probe_statistics":
         for trial_num in args.trial_nums:
             for model_name_and_num_epoch in args.model_names_and_num_epochs:
                 model_name, num_epochs = model_name_and_num_epoch.split('_')
-                sb_cmd += "\npython -u {script} --function={function} --experiment_name={experiment_name} --filler_type={filler_type} --model_name={model_name} --trial_num={trial_num} --test_filename={test_filename}"
+                sb_cmd += "\npython -u {script} --function={function} --exp_name={experiment_name} --filler_type={filler_type} --model_name={model_name} --trial_num={trial_num} --test_filename={test_filename}"
                 output = "/home/cc27/Thesis/generalized_/schema_learning/slurms/outputs/probestatistics_experiment{experiment_name}_{model_name}_{function}_trial{trial_num}_{datetime}_%j.txt"
                 sbproc = subprocess.Popen(["sbatch",
                                            "--output=" + output.format(model_name=model_name, function=args.function, experiment_name=args.experiment_name, test_filename=test_filename, datetime=time.strftime("%y%m%d") + "_" + time.strftime("%H%M%D").replace("/", ""), trial_num=trial_num),
