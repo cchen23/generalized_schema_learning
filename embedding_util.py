@@ -1,6 +1,9 @@
 """Helper modules for embeddings."""
 import numpy as np
-import tensorflow as tf
+try:
+    import tensorflow as tf
+except:
+    print('Failed to load tensorflow')
 
 DIMS = 50
 
@@ -22,18 +25,15 @@ def normalize(a):
     """
     return a/np.linalg.norm(a)
 
-def create_word_vector(filler_distribution=None, normalize_fillerdistribution=True):
+def create_word_vector(filler_distribution=None, normalize_filler_distribution=True):
     """Returns a random Gaussian vector with DIMS dimensions."""
     vector = embed_2d(DIMS, None)
     vector = normalize(vector)
     if filler_distribution == "add05":
-        #print("adding 0.5 to even indices")
-        vector[::2] = 0.5
-    elif filler_distribution == "add025":
-        #print("adding 0.25 to even indices")
-        vector[::2] = 0.25
-    if normalize_fillerdistribution:
-        #print("normalizing filler distribution")
+        vector[::2] += 0.5
+    elif filler_distribution == "subtract05":
+        vector[::2] -= 0.5
+    if normalize_filler_distribution:
         vector = normalize(vector)
     return normalize(vector)
 
