@@ -92,13 +92,15 @@ def shift_inputs(batchX, experiment_name):
         padding_index = 27
     elif experiment_name == "fixedfiller_gensymbolicstates_100000_1_testunseen_AllQs":
         padding_index = 27
+    elif experiment_name == "probe_role_statistic_recall":
+        padding_index = 5017
     else:
-        raise ArgumentError("Unsupported experiment name.")
+        raise Exception("Unsupported experiment name.")
     batch_size = batchX.shape[0]
     new_X = np.zeros(batchX.shape, dtype=np.int16)
     for i in range(len(batchX)):
         original_Xi = batchX[i]
-        new_Xi = np.zeros(original_Xi.shape)
+        new_Xi = np.zeros(original_Xi.shape, dtype=int)
         first_padding_index = np.where(original_Xi == padding_index)[0][0]
         padding_location = np.random.choice(range(first_padding_index))
         new_Xi[:padding_location] = original_Xi[:padding_location]
