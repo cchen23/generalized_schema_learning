@@ -58,8 +58,8 @@ def generate_experiments(num_dims=50,
                          num_test_examples=120,
                          num_train_fillers_per_category=1000,
                          num_test_fillers_per_category=1000,
-                         normalize_filler_distribution=False,
-                         save_dir=os.path.join("/", "home", "cc27", "Thesis", "generalized_schema_learning", "data", "probe_role_statistic_recall")):
+                         normalize_filler_distribution=True,
+                         save_dir=os.path.join("/", "home", "cc27", "Thesis", "generalized_schema_learning", "data", "probe_role_statistic_recall_normalize")):
     print("Saving to {save_dir}".format(save_dir=save_dir))
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
