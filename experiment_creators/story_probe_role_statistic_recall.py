@@ -44,8 +44,7 @@ def write_examples(fillers_by_role_dict,
             answer = [story.squeeze()[role_story_indices[queried_role][0]]]
             if ambiguous == 'queried_role':
                 story[0, role_story_indices[queried_role]] = noise_wordlist_index
-            noise_index = np.random.choice(range(story_length))
-            story_with_noise = np.concatenate((story[:, :noise_index], noise_matrix, story[:, noise_index:]), axis=1)
+            story_with_noise = np.concatenate((story, noise_matrix), axis=1)
             story = np.concatenate((story_with_noise, np.reshape(question_wordlist_indices[queried_role], (1, 1, 1))), axis=1)
             X = np.concatenate((X, story), axis=0)
             y = np.concatenate((y, np.reshape(np.array(answer), (1, 1))), axis=0)
@@ -166,13 +165,13 @@ def generate_experiments(num_dims=50,
                    save_path=os.path.join(save_dir, "test_unseen_flipped_distribution.p"))
 
     # Generate unseen ood test set.
-    unseen_flipped_distribution_fillers_by_role_dict = {
+    unseen_no_addition_fillers_by_role_dict = {
             'emcee': no_addition_fillers_indices,
             'friend': no_addition_fillers_indices,
             'poet': no_addition_fillers_indices,
             'subject': no_addition_fillers_indices,
             }
-    write_examples(fillers_by_role_dict=unseen_flipped_distribution_fillers_by_role_dict,
+    write_examples(fillers_by_role_dict=unseen_no_addition_fillers_by_role_dict,
                    story_frame_matrix=story_frame_matrix,
                    num_examples=num_test_examples,
                    roles=ROLES,
