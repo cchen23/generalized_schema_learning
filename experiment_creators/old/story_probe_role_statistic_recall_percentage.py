@@ -1,3 +1,4 @@
+import argparse
 import numpy as np
 import os
 import pickle
@@ -56,9 +57,10 @@ def write_examples(fillers_by_role_dict,
 def generate_experiments(num_dims=50,
                          num_train_examples=12000,
                          num_test_examples=120,
-                         num_train_fillers_per_category=1000,
+                         num_train_fillers_per_category=10000,
                          num_test_fillers_per_category=1000,
                          normalize_filler_distribution=True,
+                         dims=50,
                          percentage=80):
     save_dir=os.path.join("/", "home", "cc27", "Thesis", "generalized_schema_learning", "data", "probe_role_statistic_recall_normalize_%d" % percentage)
     print("Saving to {save_dir}".format(save_dir=save_dir))
@@ -220,6 +222,9 @@ def generate_experiments(num_dims=50,
             word_embedding['vector'] = create_word_vector("add05", normalize_filler_distribution=normalize_filler_distribution)
         elif "subtract_05" in word:
             word_embedding['vector'] = create_word_vector("subtract05", normalize_filler_distribution=normalize_filler_distribution)
+        elif word == 'zzz':
+            print('generating zzz vector')
+            word_embedding['vector'] = np.zeros(dims)
         else:
             word_embedding['vector'] = create_word_vector()
         embedding.append(word_embedding)
@@ -232,4 +237,7 @@ def generate_experiments(num_dims=50,
 
 
 if __name__ == '__main__':
-    generate_experiments()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--percentage', default=90, type=int)
+    args = parser.parse_args()
+    generate_experiments(percentage=args.percentage)
