@@ -7,17 +7,6 @@ except:
 
 DIMS = 50
 
-"""For creating embedding."""
-def embed_2d(d, distr, param = [1, 1]):
-    """Return random Gaussian vector with d dimensions.
-
-    FROM https://github.com/jtpacific/SEM/blob/master/hrr.py
-    """
-    rand = np.random.rand(d)
-    spike = list(map(lambda x: round(float(bool(x < param[1]))), rand))
-    slab = np.random.normal(size=d) * param[1]
-    return normalize(np.multiply(spike, slab))
-
 def normalize(a):
     """Return normalized vector.
 
@@ -27,12 +16,12 @@ def normalize(a):
 
 def create_word_vector(filler_distribution=None, normalize_filler_distribution=True):
     """Returns a random Gaussian vector with DIMS dimensions."""
-    vector = embed_2d(DIMS, None)
+    vector = np.random.normal(size=DIMS)
     vector = normalize(vector)
-    if filler_distribution == "add05":
+    if filler_distribution == "add05even":
         vector[::2] += 0.5
-    elif filler_distribution == "subtract05":
-        vector[::2] -= 0.5
+    elif filler_distribution == "add05odd":
+        vector[1::2] += 0.5
     if normalize_filler_distribution:
         vector = normalize(vector)
     return normalize(vector)
