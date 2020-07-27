@@ -12,7 +12,7 @@ noise_index = wordlist.index(noise_word)
 query_to_input_indices = {
         'qemcee': [6],
         'qfriend': [4],
-        'qsubject': [1, 3],
+        'qsubject': [3],
         'qpoet': [8],
         }
 
@@ -25,13 +25,13 @@ def test_distributions():
     with open(os.path.join(save_dir, 'embedding.p'), 'rb') as f:
         embeddings = pickle.load(f)
     for word in embeddings:
-        if 'add_05' in word:
+        if 'add_05_even' in word:
             assert_mostly_greater(word['vector'][::2], word['vector'][1::2])
-        elif 'subtract_05' in word:
+        elif 'add_05_odd' in word:
             assert_mostly_greater(word['vector'][1::2], word['vector'][::2])
 
 
-def assert_distribution(fillers_list, term_a, term_a_proportion, term_b, term_b_proportion, tolerance=0.1):
+def assert_distribution(fillers_list, term_a, term_a_proportion, term_b, term_b_proportion, tolerance=0.10):
     term_a_sampled_proportion = len([filler for filler in fillers_list if term_a in filler]) / float(len(fillers_list))
     term_b_sampled_proportion = len([filler for filler in fillers_list if term_b in filler]) / float(len(fillers_list))
     assert(term_a_sampled_proportion > term_a_proportion - tolerance)
@@ -55,10 +55,10 @@ def test_train_set():
             emcee_friend_answers.append(answer)
         else:
             subject_poet_answers.append(answer)
-        assert('_05_train' in answer)
+        assert('_05_even_train' in answer or '_05_odd_train' in answer)
         assert(int(input_sentence[query_to_input_indices[query][0]]) == answer_word_index)
-    assert_distribution(subject_poet_answers, 'add', 0.9, 'subtract', 0.1)
-    assert_distribution(emcee_friend_answers, 'subtract', 0.9, 'add', 0.1)
+    assert_distribution(subject_poet_answers, 'even', 0.90, 'odd', 0.10)
+    assert_distribution(emcee_friend_answers, 'odd', 0.90, 'even', 0.10)
 
 def test_test_set():
     with open(os.path.join(save_dir, 'test.p'), 'rb') as f:
@@ -76,11 +76,11 @@ def test_test_set():
             emcee_friend_answers.append(answer)
         else:
             subject_poet_answers.append(answer)
-        assert('_05_test' in answer)
+        assert('_05_even_test' in answer or '_05_odd_test' in answer)
         assert(int(input_sentence[query_to_input_indices[query][0]]) == answer_word_index)
         
-    assert_distribution(subject_poet_answers, 'add', 0.9, 'subtract', 0.1)
-    assert_distribution(emcee_friend_answers, 'subtract', 0.9, 'add', 0.1)
+    assert_distribution(subject_poet_answers, 'even', 0.90, 'odd', 0.10)
+    assert_distribution(emcee_friend_answers, 'odd', 0.90, 'even', 0.10)
 
 
 def test_flipped_test_set():
@@ -99,11 +99,11 @@ def test_flipped_test_set():
             emcee_friend_answers.append(answer)
         else:
             subject_poet_answers.append(answer)
-        assert('_05_train' in answer)
+        assert('_05_even_train' in answer or '_05_odd_train' in answer)
         assert(int(input_sentence[query_to_input_indices[query][0]]) == answer_word_index)
         
-    assert_distribution(subject_poet_answers, 'add', 0.1, 'subtract', 0.9)
-    assert_distribution(emcee_friend_answers, 'subtract', 0.1, 'add', 0.9)
+    assert_distribution(subject_poet_answers, 'even', 0.10, 'odd', 0.90)
+    assert_distribution(emcee_friend_answers, 'odd', 0.10, 'even', 0.90)
 
 
 
@@ -123,11 +123,11 @@ def test_unseen_flipped_test_set():
             emcee_friend_answers.append(answer)
         else:
             subject_poet_answers.append(answer)
-        assert('_05_test' in answer)
+        assert('_05_even_test' in answer or '_05_odd_test' in answer)
         assert(int(input_sentence[query_to_input_indices[query][0]]) == answer_word_index)
         
-    assert_distribution(subject_poet_answers, 'add', 0.1, 'subtract', 0.9)
-    assert_distribution(emcee_friend_answers, 'subtract', 0.1, 'add', 0.9)
+    assert_distribution(subject_poet_answers, 'even', 0.10, 'odd', 0.90)
+    assert_distribution(emcee_friend_answers, 'odd', 0.10, 'even', 0.90)
 
 
 def test_unseen_no_addition_test_set():
@@ -140,8 +140,8 @@ def test_unseen_no_addition_test_set():
         answer_word_index = int(y[example_num][0]) 
         answer = wordlist[answer_word_index]
         input_sentence = np.delete(np.squeeze(input_sentence), np.where(input_sentence == noise_index))
-        assert('add_05' not in answer)
-        assert('subtract_05' not in answer)
+        assert('add_05_even' not in answer)
+        assert('add_05_odd' not in answer)
         assert(int(input_sentence[query_to_input_indices[query][0]]) == answer_word_index)
 
 
