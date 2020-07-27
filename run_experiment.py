@@ -49,10 +49,14 @@ class parameters():
         self.function = args.function
         self.input_dim = input_dims[self.experiment_name] # Length of input sequence, hard-coded in experiment_parameters.py.
         self.num_classes = DIMS # Num classes is vector dimension, since this is the size of vectors outputted by the networks.
-        self.batch_size = 4 # Batch size is small because some experiments have ~24 inputs per epoch.
+        self.batch_size = 16
         self.data_dir = os.path.join(self.data_dir, self.experiment_name)
-        self.ckpt_dir = os.path.join(base_dir, 'checkpoints', self.experiment_name, self.filler_type, self.model_name, 'trial%d' % self.trial_num)
-        self.results_dir = os.path.join(self.results_dir, self.experiment_name, self.filler_type)
+        if not args.checkpoint_filler_type:
+            self.checkpoint_filler_type = self.filler_type
+        else:
+            self.checkpoint_filler_type = args.checkpoint_filler_type
+        self.ckpt_dir = os.path.join(base_dir, 'checkpoints', self.experiment_name, self.checkpoint_filler_type, self.model_name, 'trial%d' % self.trial_num)
+        self.results_dir = os.path.join(self.results_dir, self.experiment_name, self.checkpoint_filler_type, self.filler_type)
 
         if not os.path.exists(self.results_dir):
             os.makedirs(self.results_dir)
@@ -301,7 +305,7 @@ def train(FLAGS):
                     with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d_split.p' % (FLAGS.model_name, train_epoch_num + previous_trained_epochs, FLAGS.trial_num)), 'wb') as f:
                         pickle.dump({'accuracies':test_epoch_accuracies_split, 'losses':test_epoch_losses_split}, f)
 
-def test(FLAGS, test_filename):
+def test(FLAGS, test_filename, save_logits=False):
     """Perform error analysis on test set.
 
     Args:
@@ -329,9 +333,12 @@ def test(FLAGS, test_filename):
         inputs = []
         predictions = []
         responses = []
-        for test_epoch_num, test_epoch in enumerate(generate_epoch(test_X, test_y, num_epochs=1, FLAGS=FLAGS, embedding=embedding)):
+        saved_logits = []
+        for test_epoch_num, test_epoch in enumerate(generate_epoch(test_X, test_y, num_epochs=1, FLAGS=FLAGS, embedding=embedding, do_shift_inputs=False)):
             for test_batch_num, (batch_X, batch_y, batch_embedding) in enumerate(test_epoch):
                 print(test_batch_num)
+                if test_batch_num > 20:
+                    break
                 loss, accuracy = model.step(sess, batch_X, batch_y, batch_embedding, FLAGS.l, FLAGS.e, run_option="forward_only")
                 test_batch_loss.append(loss)
                 test_batch_accuracy.append(accuracy)
@@ -343,6 +350,9 @@ def test(FLAGS, test_filename):
                     inputs.append(test_input)
                     predictions.append(prediction)
                     responses.append(response)
+                    if save_logits:
+                        saved_logits.append(np.expand_dims(logits[i], axis=0))
+                print('test batch accuracy %0.2f' % np.mean(test_batch_accuracy))
         print('Test set name %s' % str(test_filename))
         print ('Test time: %.4f, test loss: %.7f,'
             ' test acc: %.7f' % (time.time() - test_start_time, np.mean(test_batch_loss),
@@ -357,6 +367,9 @@ def test(FLAGS, test_filename):
             os.makedirs(predictions_dir)
         with open(os.path.join(predictions_dir, 'test_analysis_results_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename)), 'wb') as f:
             pickle.dump(analysis_results, f)
+        if save_logits:
+            np.savez(os.path.join(predictions_dir, 'logits_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename)), np.concatenate(saved_logits, axis=0))
+
 
 def analyze(FLAGS, test_filename):
    """Perform analysis on specified test set. Used for decoding experiments.
@@ -456,9 +469,10 @@ if __name__ == '__main__':
     FLAGS = parameters()
     parser=argparse.ArgumentParser()
 
-    parser.add_argument('--function', help='Desired function.', choices=["train", "test", "analyze"], required=True)
+    parser.add_argument('--function', help='Desired function.', choices=["train", "test", "analyze", "probe"], required=True)
     parser.add_argument('--exp_name', help='Name of folder containing experiment data.', type=str, required=True)
-    parser.add_argument('--filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler"], required=True)
+    parser.add_argument('--filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions"], required=True)
+    parser.add_argument('--checkpoint_filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions"], required=True)
     parser.add_argument('--model_name', help='Name of architecture.', choices=["CONTROL", "DNC", "GRU-LN", "LSTM-LN", "NTM2", "RNN-LN", "RNN-LN-FW"], required=True)
 
     parser.add_argument('--num_epochs', help='Number of epochs to train. Only used for train function.', type=int)
@@ -481,6 +495,8 @@ if __name__ == '__main__':
     print("Results directory: %s" % FLAGS.results_dir)
     print("*******************************************************************")
 
+    np.random.seed(args.trial_num)
+    tf.set_random_seed(args.trial_num)
     if args.function == 'train':
         FLAGS.num_epochs = int(args.num_epochs)
         FLAGS.save_every =  max(1, FLAGS.num_epochs//4)
@@ -490,6 +506,9 @@ if __name__ == '__main__':
     elif args.function == 'test':
         test_filename = args.test_filename
         test(FLAGS, test_filename)
+    elif args.function == 'probe':
+        test_filename = args.test_filename
+        test(FLAGS, test_filename, save_logits=True)
     elif args.function == 'analyze':
         test_filename = args.test_filename
         analyze(FLAGS, test_filename)
