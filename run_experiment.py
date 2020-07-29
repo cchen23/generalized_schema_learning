@@ -337,7 +337,7 @@ def test(FLAGS, test_filename, save_logits=False):
         for test_epoch_num, test_epoch in enumerate(generate_epoch(test_X, test_y, num_epochs=1, FLAGS=FLAGS, embedding=embedding, do_shift_inputs=False)):
             for test_batch_num, (batch_X, batch_y, batch_embedding) in enumerate(test_epoch):
                 print(test_batch_num)
-                if test_batch_num > 20:
+                if test_batch_num > 5:
                     break
                 loss, accuracy = model.step(sess, batch_X, batch_y, batch_embedding, FLAGS.l, FLAGS.e, run_option="forward_only")
                 test_batch_loss.append(loss)

@@ -42,9 +42,9 @@ def write_examples(fillers_by_role_dict,
                 filler = np.random.choice(fillers_by_role_dict[role])
                 story[0, role_story_indices[role], 0] = filler
             queried_role = np.random.choice(roles)
-            answer = [story.squeeze()[role_story_indices[queried_role][0]]]
             if ambiguous == 'queried_role':
                 story[0, role_story_indices[queried_role]] = noise_wordlist_index
+            answer = [story.squeeze()[role_story_indices[queried_role][0]]]
             story_with_noise = np.concatenate((story, noise_matrix), axis=1)
             story = np.concatenate((story_with_noise, np.reshape(question_wordlist_indices[queried_role], (1, 1, 1))), axis=1)
             X = np.concatenate((X, story), axis=0)
