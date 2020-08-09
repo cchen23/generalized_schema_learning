@@ -88,21 +88,21 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
     role_types = story_frame_info['role_types']
     state_sequences = construct_all_state_sequences(transitions)
     assert(len(state_sequences) == 24)
-    frames = [[state_contents[state] for state in state_sequence] for state_sequence in state_sequences]
+    frames = [flatten_arrays([state_contents[state] for state in state_sequence]) for state_sequence in state_sequences]
     num_examples = len(frames) * num_examples_per_frame
     num_unseen_examples = len(frames) * num_unseen_examples_per_frame
 
     if 'variablefiller' in experiment_name:
-        dummy_instances = {role: '%sFILLER' for role in role_types.keys()}
+        dummy_instances = {role: ['%sFILLER' % role] for role in role_types.keys()}
         train_instances, test_instances = dummy_instances, dummy_instances
     elif 'fixedfiller' in experiment_name:
         train_instances, test_instances = hard_coded_things.fixed_train_instances, hard_coded_things.fixed_test_instances
 
     query_choices = role_types.keys()
-    wordslist = flatten_arrays(state_contents.values()) + list(train_instances.values()) + list(test_instances.values()) + [padding_word, query_delimiter]
+    wordslist = flatten_arrays(state_contents.values()) + flatten_arrays(train_instances.values()) + flatten_arrays(test_instances.values()) + [padding_word, query_delimiter]
 
     for query_choice in query_choices:
-        wordslist.add(query_starter + query_choice)
+        wordslist.append(query_starter + query_choice)
     wordslist = list(set(wordslist))
 
     # Determine experiment information.
@@ -125,18 +125,20 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
             story = copy.deepcopy(frame)
             role_assignments = {}
             for role in frame_roles:
-                role_assignment = np.random.choice(train_instances[role_types[role]])
                 if 'fixedfiller' in experiment_name:
+                    role_assignment = np.random.choice(train_instances[role_types[role]])
                     while role_assignment in role_assignments.values():
                         role_assignment = np.random.choice(train_instances[role_types[role]])
+                elif 'variablefiller' in experiment_name:
+                    role_assignment = '%sFILLER' % role
                 role_assignments[role] = role_assignment
             queried_role = np.random.choice(role_assignments.keys())
             query = query_starter + queried_role
-            response = role_assignments[query]
+            response = role_assignments[queried_role]
 
             # If necessary, add padding to end of story (ensures that inputs are all the same length).
             story += [padding_word] * (padding_size + 1)  # so we can shift all stories later.
-            story.append(query_delimiter + query_starter + query)
+            story += [query_delimiter, query]
             outputs = [response]
 
             # Convert to numerical representation and add to X and y.
@@ -148,21 +150,24 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
             story = copy.deepcopy(frame)
             role_assignments = {}
             for role in frame_roles:
-                role_assignment = np.random.choice(test_instances[role_types[role]])
-                while role_assignment in role_assignments.values():
-                    role_assignment = np.random.choice(test_instances[role_types[role]])
+                if 'fixedfiller' in experiment_name:
+                    role_assignment = np.random.choice(train_instances[role_types[role]])
+                    while role_assignment in role_assignments.values():
+                        role_assignment = np.random.choice(train_instances[role_types[role]])
+                elif 'variablefiller' in experiment_name:
+                    role_assignment = '%sFILLER' % role
                 role_assignments[role] = role_assignment
             queried_role = np.random.choice(role_assignments.keys())
             query = query_starter + queried_role
-            response = role_assignments[query]
+            response = role_assignments[queried_role]
 
             # If necessary, add padding to end of story (ensures that inputs are all the same length).
             story += [padding_word] * (padding_size + 1)  # so we can shift all stories later.
-            story.append(query_delimiter + query_starter + query)
+            story += [query_delimiter, query]
             outputs = [response]
 
             # Convert to numerical representation and add to X and y.
-            data_index = (num_examples_per_frame * frame_index) + example_index
+            data_index = (num_unseen_examples_per_frame * frame_index) + example_index
             test_unseen_X[data_index, :, :] = np.expand_dims([wordslist.index(storyword) for storyword in story], axis=1)
             test_unseen_y[data_index, :] = [wordslist.index(output_word) for output_word in outputs]
 
@@ -191,7 +196,7 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
         experiment_parameters = json.load(f)
 
     experiment_parameters['input_dims'][experiment_name] = input_dims
-    fillers = list(set(list(train_instances.values()) + list(test_instances.values())))
+    fillers = list(set(flatten_arrays(train_instances.values()) + flatten_arrays(test_instances.values())))
     experiment_parameters['filler_indices'][experiment_name] = [wordslist.index(filler) for filler in fillers]
     experiment_parameters['padding_indices'][experiment_name] = wordslist.index(padding_word)
 

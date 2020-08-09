@@ -1,6 +1,10 @@
 import json
+import os
 
-with open('experiment_parameters.json', 'r') as f:
+from directories import base_dir
+
+
+with open(os.path.join(base_dir, 'experiment_parameters.json'), 'r') as f:
     experiment_parameters = json.load(f)
 
 embedding_size = 50
