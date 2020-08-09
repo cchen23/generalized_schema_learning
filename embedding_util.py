@@ -8,20 +8,13 @@ except:
 DIMS = 50
 
 def normalize(a):
-    """Return normalized vector.
-
-    FROM https://github.com/jtpacific/SEM/blob/master/hrr.py
-    """
+    """Return normalized vector."""
     return a/np.linalg.norm(a)
 
 def create_word_vector(filler_distribution=None, normalize_filler_distribution=True):
     """Returns a random Gaussian vector with DIMS dimensions."""
     vector = np.random.normal(size=DIMS)
     vector = normalize(vector)
-    if filler_distribution == "add05even":
-        vector[::2] += 0.5
-    elif filler_distribution == "add05odd":
-        vector[1::2] += 0.5
     if normalize_filler_distribution:
         vector = normalize(vector)
     return normalize(vector)

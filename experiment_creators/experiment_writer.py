@@ -1,44 +1,65 @@
 """Modules to create data for role-filler binding experiments."""
 import argparse
-import ast
+import copy
+import json
 import numpy as np
 import os
 import pickle
-import re
 import sys
 
 sys.path.append("../")
 sys.path.append("./")
-from directories import home_dir, base_dir
+import hard_coded_things
 
-def update_experimentdatapath(experiment_data_path, generalization_type):
-    """Update experiment data path for specified generalization type."""
-    if generalization_type == "TESTUNSEEN":
-        experiment_data_path += "_testunseen"
-    return experiment_data_path
+from embedding_util import create_word_vector
+from directories import base_dir
 
-def write_csw_experiment(experiment_foldername, generalization_type=None, possible_queries=None):
-    print(experiment_foldername)
-    print(generalization_type)
-    print(possible_queries)
+
+def flatten_arrays(unflattened_list):
+    return [item for sublist in unflattened_list for item in sublist]
+
+
+def construct_all_state_sequences(transitions,
+        start_frame=['begin'],
+        end_state='end'):
+    '''Returns a list of all paths from start to end state using transitions.
+
+    Args:
+    ====
+    transitions: Dictionary mapping from state to outgoing states.
+    start_frame: List of states that have been visited.
+    end_state: Name of end state.
+
+    Returns:
+    =======
+    state_sequences: A list of all state sequences from start to end state.
+    '''
+    state_sequences = []
+    previous_state = start_frame[-1]
+    if previous_state == end_state:
+        return [start_frame]
+
+    next_states = transitions[previous_state]
+    for state in next_states:
+        state_sequences += construct_all_state_sequences(transitions=transitions,
+                start_frame=start_frame + [state],
+                end_state=end_state)
+    return state_sequences
+
+
+def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_examples_per_frame):
+    print(experiment_name)
     """Create train and test sets for a role-filler binding experiment.
 
     Assumes story files have been written by Coffee Shop world.
 
     Args:
-        experiment_foldername: Name of folder in which stories are stored.
+        experiment_name: Name of folder in which stories are stored.
                                Assumes stories are stored in the directory
                                home_dir + "narrative/story/", where home_dir is
                                defined in directories.py.
-        generalization_type: Name of relationship describing filler name overlap
-                             between train and test setself.
-                             Options:
-                                 NONE: Train and test sets use same fillers.
-                                 TESTUNSEEN: Test fillers do not overlap with train fillers.
-        possible_queries: List of roles that can be queried. If None, allows any
-                          query for which all possible fillers consist of one word.
 
-    Saves (in the directory base_dir + "data/experiment_foldername/", where
+    Saves (in the directory base_dir + "data/experiment_name/", where
            base_dir is defined in directories.py):
         train.p: A pickle file containing:
                  X: [num_train_examples x num_words_per_story x 1] matrix of train inputs.
@@ -51,174 +72,107 @@ def write_csw_experiment(experiment_foldername, generalization_type=None, possib
                         (Each X and y matrix represents words by their index in
                         the word list.)
     """
-    story_data_path = os.path.join(home_dir, 'narrative', 'story')
-    experiment_data_path = os.path.join(base_dir, "data", experiment_foldername)
+    experiment_data_path = os.path.join(base_dir, "data", experiment_name)
+    experiment_data_path += "_AllQs"
     query_delimiter = "?"
     query_starter = "Q"
     padding_word = "zzz"
-    test_unseen_generalization = generalization_type == "TESTUNSEEN"
-    story_data_path = os.path.join(story_data_path, experiment_foldername)
-
-    # Create directory to save experiment data.
-    experiment_data_path = update_experimentdatapath(experiment_data_path, generalization_type)
-    if possible_queries:
-        path_extension = ""
-        for query in possible_queries:
-            path_extension += "Q" + query
-        experiment_data_path += "_%s" % path_extension
-    else:
-        experiment_data_path += "_AllQs"
     if not os.path.exists(experiment_data_path):
         os.makedirs(experiment_data_path)
 
-    # Get experiment info. Entities are types of fillers (e.g. "Person"), and roles
-    # are parts of the story that are substituted by fillers (e.g. "Subject", "Friend").
-    # Each role can be filled by one entity (e.g. "Subject" must be a "Person"),
-    # and each entity can fill multiple roles (e.g. a "Person" can be a "Subject"
-    # or a "Friend").
-    experiment_foldername_split = experiment_foldername.split("_")
-    QA_filename = "_".join(experiment_foldername_split[:-2]+["QA"]+experiment_foldername_split[-2:])
-    entities_filename = "_".join(experiment_foldername_split[:-2]+["entities"]+experiment_foldername_split[-2:])
-    storyfile = open(os.path.join(story_data_path, "%s.txt" % experiment_foldername), 'rb')
-    stories = storyfile.read()
-    wordslist = re.sub("[^\w]", " ", stories).split()
-    wordslist = set(wordslist)
-    storyfile.close()
-    QA_file = open(os.path.join(story_data_path, "%s.txt" % QA_filename), 'r')
-    entities_file = open(os.path.join(story_data_path, "%s.txt" % entities_filename), 'r')
+    # Create frames.
+    with open('story_frame.json', 'r') as f:
+        story_frame_info = json.load(f)
+    transitions = story_frame_info['transitions']
+    state_contents = story_frame_info['state_contents']
+    role_types = story_frame_info['role_types']
+    state_sequences = construct_all_state_sequences(transitions)
+    assert(len(state_sequences) == 24)
+    frames = [[state_contents[state] for state in state_sequence] for state_sequence in state_sequences]
+    num_examples = len(frames) * num_examples_per_frame
+    num_unseen_examples = len(frames) * num_unseen_examples_per_frame
 
-    if test_unseen_generalization:
-        train_instances = []
-        test_instances = []
+    if 'variablefiller' in experiment_name:
+        dummy_instances = {role: '%sFILLER' for role in role_types.keys()}
+        train_instances, test_instances = dummy_instances, dummy_instances
+    elif 'fixedfiller' in experiment_name:
+        train_instances, test_instances = hard_coded_things.fixed_train_instances, hard_coded_things.fixed_test_instances
 
-    # If necessary, set train and test instances.
-    all_entities = ast.literal_eval(entities_file.readline()) # First line is a dict of all entities and their names.
-    all_roles = ast.literal_eval(entities_file.readline()) # Second line is a dict of all roles and their names.
+    query_choices = role_types.keys()
+    wordslist = flatten_arrays(state_contents.values()) + list(train_instances.values()) + list(test_instances.values()) + [padding_word, query_delimiter]
 
-    # NOTE: Custom (hard-coded) train and test instances. Schema definitions ensure that the sets of train and test fillers (not just outputs) are disjoint.
-    if 'variablefiller' in experiment_foldername:
-        train_instances = ['PersonFillerTrain', 'FriendFillerTrain', 'EmceeFillerTrain', 'PoetFillerTrain', 'DrinkFillerTrain', 'DessertFillerTrain']
-        test_instances = ['PersonFillerTest', 'FriendFillerTest', 'EmceeFillerTest', 'PoetFillerTest', 'DrinkFillerTest', 'DessertFillerTest']
-    if 'fixedfiller' in experiment_foldername:
-        train_instances = ['Mariko', 'Pradeep', 'Sarah', 'Julian', 'Jane', 'John', 'latte', 'water', 'juice', 'milk', 'espresso', 'chocolate', 'mousse', 'cookie', 'candy', 'cupcake', 'cheesecake', 'pastry']
-        test_instances = ['Olivia', 'Will', 'Anna', 'Bill', 'coffee', 'tea', 'cake', 'sorbet']
-    if test_unseen_generalization:
-        print("Train instances:", train_instances)
-        print("Unseen generalization instances:", test_instances)
-
-    query_choices = all_roles.keys() # Assumes that all fillers have exactly one word.
-    if possible_queries:
-        query_choices = possible_queries
-    print("Query choices: %s" % str(query_choices))
-
-    # Update wordlist for padding and query words.
     for query_choice in query_choices:
         wordslist.add(query_starter + query_choice)
-    wordslist.add(query_delimiter)
-    wordslist.add(padding_word) # Padding used when stories are not all the same length.
-    wordslist = list(wordslist)
-    QA_file.close()
+    wordslist = list(set(wordslist))
 
     # Determine experiment information.
-    max_story_length = max([len(re.sub("[^\w]", " ", story).split()) for story in stories.split(' \n\n')])
-    input_dims = max_story_length+(3) # +2 for query delimiter and the actual query. +1 for padding at end.
-    num_classes = len(wordslist) # For one-hot encoding of each word.
-    num_samples = int(experiment_foldername_split[-1]) * int(experiment_foldername_split[-2]) # Relies on naming convention used in narrative/.
-    print("INPUT DIMS: %d" % input_dims)
-    print("NUM CLASSES: %d" % num_classes)
+    max_story_length = max([len(frame) for frame in frames])
+    input_dims = max_story_length + 3  # +2 for query delimiter and the actual query. +1 for padding at end.
 
-    X = np.zeros([num_samples, input_dims, 1], dtype=np.int32)
-    y = np.zeros([num_samples, 1], dtype=np.int32)
-    if test_unseen_generalization:
-        train_indices = []
-        test_indices = []
+    X = np.zeros([num_examples, input_dims, 1], dtype=np.int32)
+    y = np.zeros([num_examples, 1], dtype=np.int32)
+    test_unseen_X = np.zeros([num_unseen_examples, input_dims, 1], dtype=np.int32)
+    test_unseen_y = np.zeros([num_unseen_examples, 1], dtype=np.int32)
 
     # Generate inputs and correct outputs from stories.
-    story_file = open(os.path.join(story_data_path, "%s.txt" % experiment_foldername), 'rb')
-    QA_file = open(os.path.join(story_data_path, "%s.txt" % (QA_filename)), 'r')
-    verification_file = open(os.path.join(experiment_data_path, "Xy_english.txt"), 'wb')
-    for i in range(num_samples):
-        # Get story and info.
-        story = story_file.readline()
-        while story == '\n':
-            story = story_file.readline()
-        story = re.sub("[^\w]", " ", story).split(' \n')[0].split()
-        entities = QA_file.readline()
-        while entities[0] != "{":
-            entities = QA_file.readline()
-        attributes = QA_file.readline()
-        entities = ast.literal_eval(entities)
+    for frame_index, frame in enumerate(frames):
+        print('Generating for frame ', frame)
+        padding_size = max_story_length - len(frame)
+        frame_roles = [role for role in role_types.keys() if role in frame]
+        for example_index in range(num_examples_per_frame):
+            if example_index % 1000 == 0:
+                print(example_index)
+            story = copy.deepcopy(frame)
+            role_assignments = {}
+            for role in frame_roles:
+                role_assignment = np.random.choice(train_instances[role_types[role]])
+                if 'fixedfiller' in experiment_name:
+                    while role_assignment in role_assignments.values():
+                        role_assignment = np.random.choice(train_instances[role_types[role]])
+                role_assignments[role] = role_assignment
+            queried_role = np.random.choice(role_assignments.keys())
+            query = query_starter + queried_role
+            response = role_assignments[query]
 
-        # Append a question about one entity.
-        entity_query = np.random.choice(query_choices)
-        entity_response = entities[entity_query]
+            # If necessary, add padding to end of story (ensures that inputs are all the same length).
+            story += [padding_word] * (padding_size + 1)  # so we can shift all stories later.
+            story.append(query_delimiter + query_starter + query)
+            outputs = [response]
 
-        # Only allow possible queries (queries for which the role occurs in the story).
-        while entity_response not in story:
-            entity_query = np.random.choice(query_choices)
-            entity_response = entities[entity_query]
+            # Convert to numerical representation and add to X and y.
+            data_index = (num_examples_per_frame * frame_index) + example_index
+            X[data_index, :, :] = np.expand_dims([wordslist.index(storyword) for storyword in story], axis=1)
+            y[data_index, :] = [wordslist.index(output_word) for output_word in outputs]
 
-        # If necessary, add padding to end of story (ensures that inputs are all the same length).
-        padding_size = max_story_length - len(story)
-        story += [padding_word] * (padding_size + 1) # so we can shift all stories later.
-        story.append(query_delimiter)
-        story.append("%s" % (query_starter + entity_query))
-        outputs = ["%s" % entity_response]
+        for example_index in range(num_unseen_examples_per_frame):
+            story = copy.deepcopy(frame)
+            role_assignments = {}
+            for role in frame_roles:
+                role_assignment = np.random.choice(test_instances[role_types[role]])
+                while role_assignment in role_assignments.values():
+                    role_assignment = np.random.choice(test_instances[role_types[role]])
+                role_assignments[role] = role_assignment
+            queried_role = np.random.choice(role_assignments.keys())
+            query = query_starter + queried_role
+            response = role_assignments[query]
 
-        # Convert to numerical representation and add to X and y.
-        X[i,:,:] = np.expand_dims([wordslist.index(storyword) for storyword in story], axis=1)
-        y[i,:] = [wordslist.index(outputword) for outputword in outputs]
+            # If necessary, add padding to end of story (ensures that inputs are all the same length).
+            story += [padding_word] * (padding_size + 1)  # so we can shift all stories later.
+            story.append(query_delimiter + query_starter + query)
+            outputs = [response]
 
-        # If necessary, separate into train and test sets based on fillers.
-        if test_unseen_generalization:
-            if len(set(story).intersection(set(train_instances))) == 0:
-                test_indices.append(i)
-            elif len(set(story).intersection(set(test_instances))) == 0:
-                train_indices.append(i)
+            # Convert to numerical representation and add to X and y.
+            data_index = (num_examples_per_frame * frame_index) + example_index
+            test_unseen_X[data_index, :, :] = np.expand_dims([wordslist.index(storyword) for storyword in story], axis=1)
+            test_unseen_y[data_index, :] = [wordslist.index(output_word) for output_word in outputs]
 
-        # Write English-language version for sanity check.
-        verification_file.write(" ".join(story) + '\n' + " ".join(outputs) + '\n' + "wordslist: " + str(wordslist) + '\n\n\n')
+    # Assert no repeated stories.
 
-    # Remove repeated stories.
-    print("********************************************************")
-    print("X shape before removing non-unique stories:", X.shape)
-    print("y shape before removing non-unique stories:", y.shape)
-    X = np.squeeze(X)
-    tempinputs = np.ascontiguousarray(X).view(np.dtype((np.void, X.dtype.itemsize * X.shape[1])))
-    _, idx = np.unique(tempinputs, return_index=True)
-    X = X[idx]
-    y = y[idx]
-    if test_unseen_generalization:
-        print("num train_indices: %d" % len(train_indices))
-        print("num test_indices: %d" % len(test_indices))
-    idx_list = idx.tolist()
-    if test_unseen_generalization:
-        print(len(idx))
-        train_indices = list(set(idx_list).intersection(train_indices))
-        test_indices = list(set(idx_list).intersection(test_indices))
-        print("num train_indices: %d" % len(train_indices))
-        print("num test_indices: %d" % len(test_indices))
-        train_indices = [idx_list.index(train_index) for train_index in train_indices]
-        test_indices = [idx_list.index(test_index) for test_index in test_indices]
-    X = np.expand_dims(X, axis=-1)
-    num_samples = X.shape[0] # NOTE: WILL NEED TO UPDATE THIS FOR ALTERNATING SCHEMAS
-    print("NUM SAMPLES: %d" % num_samples)
-    print("X shape after removing non-unique stories:", X.shape)
-    print("y shape after removing non-unique stories:", y.shape)
-
-    # Split X and y into train and test sets. If train and test instances
-    # not specified, use 80/20 train/test split.
-    if test_unseen_generalization:
-        train_X = X[train_indices,:,:]
-        train_y = y[train_indices,:]
-        test_X = X[test_indices,:,:]
-        test_y = y[test_indices,:]
-    else:
-        num_train = int(4*num_samples/5)
-        train_X = X[:num_train,:,:]
-        test_X = X[num_train:,:,:]
-        train_y = y[:num_train,:]
-        test_y = y[num_train:,:]
+    num_train = int(4 * num_examples / 5)
+    train_X = X[:num_train, :, :]
+    train_y = y[:num_train, :]
+    test_X = X[num_train:, :, :]
+    test_y = y[num_train:, :]
 
     # Save data into pickle files.
     if not os.path.exists(experiment_data_path):
@@ -228,18 +182,40 @@ def write_csw_experiment(experiment_foldername, generalization_type=None, possib
         pickle.dump([train_X, train_y], f)
     with open(os.path.join(experiment_data_path, 'test.p'), 'wb') as f:
         pickle.dump([test_X, test_y], f)
+    with open(os.path.join(experiment_data_path, 'test_unseen.p'), 'wb') as f:
+        pickle.dump([test_unseen_X, test_unseen_y], f)
+    with open(os.path.join(experiment_data_path, 'wordslist.p'), 'wb') as f:
+        pickle.dump(wordslist, f)
+
+    with open('../experiment_parameters.json', 'r') as f:
+        experiment_parameters = json.load(f)
+
+    experiment_parameters['input_dims'][experiment_name] = input_dims
+    fillers = list(set(list(train_instances.values()) + list(test_instances.values())))
+    experiment_parameters['filler_indices'][experiment_name] = [wordslist.index(filler) for filler in fillers]
+    experiment_parameters['padding_indices'][experiment_name] = wordslist.index(padding_word)
+
+
+    embedding = []
+
+    for i in range(len(wordslist)):
+        word = wordslist[i]
+        word_embedding = {}
+        word_embedding['index'] = i
+        word_embedding['word'] = word
+        word_embedding['vector'] = create_word_vector()
+        embedding.append(word_embedding)
+
+    with open(os.path.join(experiment_data_path, "embedding.p"), 'wb') as f:
+        pickle.dump(embedding, f)
 
 if __name__ == '__main__':
     # Example use: python experiment_writer_rolefillerbinding.py --exp_name=poetrygeneralization_variablefiller_gensymbolicstates_100000_1 --gen_type=TESTONLY --poss_qs=Subject,Poet
-    parser=argparse.ArgumentParser()
-
+    parser = argparse.ArgumentParser()
     parser.add_argument('--exp_name', help='Name of the folder containing experiment stories', required=True)
-    parser.add_argument('--gen_type', help='Optional: Generalization type (defaults to NONE)', choices=["NONE", "TESTUNSEEN"])
-    parser.add_argument('--poss_qs', help='Optional: Possible queries. Enter separated by commas. Ex. Subject,Poet (defaults to all queries)', type=str)
-
-    args=parser.parse_args()
-    experiment_foldername = args.exp_name
-    generalization_type = args.gen_type
-    possible_queries = args.poss_qs.split(",") if args.poss_qs else None
-    print("Generating data for CSW experiment %s" % experiment_foldername)
-    write_csw_experiment(experiment_foldername, generalization_type, possible_queries)
+    parser.add_argument('--num_examples_per_frame', help='Number of seen filler examples per frame', required=True, type=int)
+    parser.add_argument('--num_unseen_examples_per_frame', help='Number of unseen filler examples per frame', required=True, type=int)
+    args = parser.parse_args()
+    write_csw_experiment(experiment_name=args.exp_name,
+            num_examples_per_frame=args.num_examples_per_frame,
+            num_unseen_examples_per_frame=args.num_unseen_examples_per_frame)

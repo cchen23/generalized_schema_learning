@@ -15,7 +15,7 @@ from architecture_models.connect_DNC import dnc_model
 from architecture_models.connect_NTM2 import ntm2_model
 from architecture_models.custom_GRU import gru_model
 from architecture_models.custom_LSTMLN import lstmln_model
-from experiment_parameters import input_dims
+from hard_coded_things import experiment_parameters, embedding_size
 
 base_dir = directories.base_dir
 
@@ -25,7 +25,7 @@ class parameters():
 
         Contains experiment information and directory locations.
         """
-        self.num_hidden_units = 50
+        self.num_hidden_units = embedding_size
         self.l = 0.95 # decay lambda
         self.e = 0.5 # learning rate eta
         self.S = 1 # num steps to get to h_S(t+1) (Parameter for Fast Weights.)
@@ -41,14 +41,13 @@ class parameters():
         Args:
             args: Parsed command line arguments.
         """
-        DIMS = 50 # NOTE: hard-coded dimensions chosen for word vectors.
         self.filler_type = args.filler_type
         self.trial_num = args.trial_num
         self.experiment_name = args.exp_name
         self.model_name = args.model_name
         self.function = args.function
-        self.input_dim = input_dims[self.experiment_name] # Length of input sequence, hard-coded in experiment_parameters.py.
-        self.num_classes = DIMS # Num classes is vector dimension, since this is the size of vectors outputted by the networks.
+        self.input_dim = experiment_parameters['input_dims'][self.experiment_name] # Length of input sequence, hard-coded in experiment_parameters.py.
+        self.num_classes = embedding_size # Num classes is vector dimension, since this is the size of vectors outputted by the networks.
         self.batch_size = 16
         self.data_dir = os.path.join(self.data_dir, self.experiment_name)
         if not args.checkpoint_filler_type:
@@ -74,9 +73,8 @@ def get_embedding(FLAGS):
     """
     with open(os.path.join(FLAGS.data_dir, 'embedding.p')) as f:
         embedding = pickle.load(f)
-    embedding_dims = len(embedding[0]['vector'])
     num_words = len(embedding)
-    embedding_matrix = np.empty([num_words, embedding_dims])
+    embedding_matrix = np.empty([num_words, embedding_size])
     for i in range(num_words):
         embedding_matrix[i,:] = embedding[i]['vector']
     return embedding_matrix
@@ -93,15 +91,11 @@ def get_clean_model(FLAGS):
     Raises:
         ValueError: If requested architecture is not supported.
     """
-    if FLAGS.model_name == 'GRU-LN':
-        model = gru_model(FLAGS)
-    elif FLAGS.model_name == 'LSTM-LN':
+    if FLAGS.model_name == 'LSTM-LN':
         model = lstmln_model(FLAGS)
-    elif FLAGS.model_name == 'DNC':
-        model = dnc_model(FLAGS)
     elif FLAGS.model_name == 'NTM2':
         model = ntm2_model(FLAGS)
-    elif FLAGS.model_name in ['CONTROL', 'RNN-LN', 'RNN-LN-FW']:
+    elif FLAGS.model_name in ['RNN-LN', 'RNN-LN-FW']:
         model = fast_weights_model(FLAGS)
     else:
         raise ValueError('Illegal model name')
@@ -180,22 +174,17 @@ def train(FLAGS):
     """
     # Load the train/test datasets
     print("Loading datasets from directory %s:" % FLAGS.data_dir)
-    if "curriculum" in FLAGS.experiment_name:
-        train_X, train_y = load_data(os.path.join(FLAGS.data_dir, 'train_%s.p' % FLAGS.curriculum_regime))
-    else:
-        train_X, train_y = load_data(os.path.join(FLAGS.data_dir, 'train.p'))
+    train_X, train_y = load_data(os.path.join(FLAGS.data_dir, 'train.p'))
     test_X, test_y = load_data(os.path.join(FLAGS.data_dir, 'test.p'))
     # Load split datasets.
-    if 'QSubjectQFriend' in FLAGS.experiment_name or "curriculum" in FLAGS.experiment_name:
-        test_X_subject, test_y_subject = load_data(os.path.join(FLAGS.data_dir, 'test_QSubject.p'))
-        test_X_friend, test_y_friend = load_data(os.path.join(FLAGS.data_dir, 'test_QFriend.p'))
-    elif 'AllQs' in FLAGS.experiment_name:
-        test_X_subject, test_y_subject = load_data(os.path.join(FLAGS.data_dir, 'test_QSubject.p'))
-        test_X_poet, test_y_poet = load_data(os.path.join(FLAGS.data_dir, 'test_QPoet.p'))
-        test_X_dessert, test_y_dessert = load_data(os.path.join(FLAGS.data_dir, 'test_QDessert_bought.p'))
-        test_X_drink, test_y_drink = load_data(os.path.join(FLAGS.data_dir, 'test_QDrink_bought.p'))
-        test_X_emcee, test_y_emcee = load_data(os.path.join(FLAGS.data_dir, 'test_QEmcee.p'))
-        test_X_friend, test_y_friend = load_data(os.path.join(FLAGS.data_dir, 'test_QFriend.p'))
+    if 'AllQs' in FLAGS.experiment_name:
+        split_test_names = ['QSubject', 'QPoet', 'QDessert_bought', 'QDrink_bought', 'QEmcee', 'QFriend']
+        split_test_X = []
+        split_test_y = []
+        for test_name in split_test_names:
+            test_X, test_y = load_data(os.path.join(FLAGS.data_dir, 'test_%s.p' % test_name))
+            split_test_X[test_name] = test_X
+            split_test_y[test_name] = test_y
 
     embedding = get_embedding(FLAGS)
 
@@ -208,12 +197,7 @@ def train(FLAGS):
         if previous_trained_epochs > 0:
             with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d.p' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num)), 'rb') as previous_results_file:
                 train_epoch_accuracy, test_epoch_accuracy, train_epoch_loss, test_epoch_loss, train_epoch_gradient_norm = pickle.load(previous_results_file)
-            if 'QSubjectQFriend' in FLAGS.experiment_name or "curriculum" in FLAGS.experiment_name:
-                with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d_split.p' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num)), 'rb') as previous_results_file_split:
-                    previous_results_split = pickle.load(previous_results_file_split)
-                    test_epoch_accuracies_split = previous_results_split['accuracies']
-                    test_epoch_losses_split = previous_results_split['losses']
-            elif 'AllQs' in FLAGS.experiment_name:
+            if 'AllQs' in FLAGS.experiment_name:
                 with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d_split.p' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num)), 'rb') as previous_results_file_split:
                     previous_results_split = pickle.load(previous_results_file_split)
                     test_epoch_accuracies_split, test_epoch_losses_split = previous_results_split['accuracies'], previous_results_split['losses']
@@ -221,12 +205,9 @@ def train(FLAGS):
                 train_epoch_loss = []; test_epoch_loss = []
                 train_epoch_accuracy = []; test_epoch_accuracy = []
                 train_epoch_gradient_norm = []
-                if 'QSubjectQFriend' in FLAGS.experiment_name or "curriculum" in FLAGS.experiment_name:
-                    test_epoch_accuracies_split = {'QFriend':[], 'QSubject':[]}
-                    test_epoch_losses_split = {'QFriend':[], 'QSubject':[]}
-                elif 'AllQs' in  FLAGS.experiment_name:
-                    test_epoch_accuracies_split = {'QDrink':[], 'QDessert':[], 'QEmcee':[], 'QFriend':[], 'QPoet':[], 'QSubject':[]}
-                    test_epoch_losses_split = {'QDrink':[], 'QDessert':[], 'QEmcee':[], 'QFriend':[], 'QPoet':[], 'QSubject':[]}
+                if 'AllQs' in  FLAGS.experiment_name:
+                    test_epoch_accuracies_split = {test_name: [] for test_name in split_test_names}
+                    test_epoch_losses_split = {test_name: [] for test_name in split_test_names} 
         for train_epoch_num, train_epoch in enumerate(generate_epoch(train_X, train_y, FLAGS.num_epochs, FLAGS, embedding)):
             test_start_time = time.time()
             train_epoch_num += 1 # Use 1-based indexing for train epoch numbering.
@@ -258,32 +239,11 @@ def train(FLAGS):
             test_epoch_accuracy.append(mean_test_batch_accuracy)
             test_epoch_loss.append(mean_test_batch_loss)
 
-            if 'QSubjectQFriend' in FLAGS.experiment_name  or "curriculum" in FLAGS.experiment_name:
-                mean_test_batch_accuracy_friend, mean_test_batch_loss_friend = get_meantestinfo(sess, test_X_friend, test_y_friend, FLAGS, model, embedding)
-                mean_test_batch_accuracy_subject, mean_test_batch_loss_subject = get_meantestinfo(sess, test_X_subject, test_y_subject, FLAGS, model, embedding)
-                test_epoch_accuracies_split['QFriend'].append(mean_test_batch_accuracy_friend)
-                test_epoch_losses_split['QFriend'].append(mean_test_batch_loss_friend)
-                test_epoch_accuracies_split['QSubject'].append(mean_test_batch_accuracy_subject)
-                test_epoch_losses_split['QSubject'].append(mean_test_batch_loss_subject)
-            elif 'AllQs' in FLAGS.experiment_name:
-                mean_test_batch_accuracy_dessert, mean_test_batch_loss_dessert = get_meantestinfo(sess, test_X_dessert, test_y_dessert, FLAGS, model, embedding)
-                mean_test_batch_accuracy_drink, mean_test_batch_loss_drink = get_meantestinfo(sess, test_X_drink, test_y_drink, FLAGS, model, embedding)
-                mean_test_batch_accuracy_emcee, mean_test_batch_loss_emcee = get_meantestinfo(sess, test_X_emcee, test_y_emcee, FLAGS, model, embedding)
-                mean_test_batch_accuracy_friend, mean_test_batch_loss_friend = get_meantestinfo(sess, test_X_friend, test_y_friend, FLAGS, model, embedding)
-                mean_test_batch_accuracy_poet, mean_test_batch_loss_poet = get_meantestinfo(sess, test_X_poet, test_y_poet, FLAGS, model, embedding)
-                mean_test_batch_accuracy_subject, mean_test_batch_loss_subject = get_meantestinfo(sess, test_X_subject, test_y_subject, FLAGS, model, embedding)
-                test_epoch_accuracies_split['QDessert'].append(mean_test_batch_accuracy_dessert)
-                test_epoch_losses_split['QDessert'].append(mean_test_batch_loss_dessert)
-                test_epoch_accuracies_split['QDrink'].append(mean_test_batch_accuracy_drink)
-                test_epoch_losses_split['QDrink'].append(mean_test_batch_loss_drink)
-                test_epoch_accuracies_split['QEmcee'].append(mean_test_batch_accuracy_emcee)
-                test_epoch_losses_split['QEmcee'].append(mean_test_batch_loss_emcee)
-                test_epoch_accuracies_split['QFriend'].append(mean_test_batch_accuracy_friend)
-                test_epoch_losses_split['QFriend'].append(mean_test_batch_loss_friend)
-                test_epoch_accuracies_split['QPoet'].append(mean_test_batch_accuracy_poet)
-                test_epoch_losses_split['QPoet'].append(mean_test_batch_loss_poet)
-                test_epoch_accuracies_split['QSubject'].append(mean_test_batch_accuracy_subject)
-                test_epoch_losses_split['QSubject'].append(mean_test_batch_loss_subject)
+            if 'AllQs' in FLAGS.experiment_name:
+                for test_name in split_test_names.keys():
+                    mean_test_batch_accuracy, mean_test_batch_loss = get_meantestinfo(sess, split_test_X[test_name], split_test_y[test_name], FLAGS, model, embedding)
+                    test_epoch_accuracies_split[test_name].append(mean_test_batch_accuracy)
+                    test_epoch_losses_split[test_name].append(mean_test_batch_losss)
             print ('Epoch: [%i/%i] time: %.4f, test loss: %.7f,'
                     ' test acc: %.7f' % (train_epoch_num, FLAGS.num_epochs,
                         time.time() - test_start_time, test_epoch_loss[-1],
@@ -298,10 +258,7 @@ def train(FLAGS):
                 model.saver.save(sess, checkpoint_path, global_step=(train_epoch_num + previous_trained_epochs))
                 with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d.p' % (FLAGS.model_name, train_epoch_num + previous_trained_epochs, FLAGS.trial_num)), 'wb') as f:
                     pickle.dump([train_epoch_accuracy, test_epoch_accuracy, train_epoch_loss, test_epoch_loss, train_epoch_gradient_norm], f)
-                if 'QSubjectQFriend' in FLAGS.experiment_name or "curriculum" in FLAGS.experiment_name:
-                    with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d_split.p' % (FLAGS.model_name, train_epoch_num + previous_trained_epochs, FLAGS.trial_num)), 'wb') as f:
-                        pickle.dump({'accuracies':test_epoch_accuracies_split, 'losses':test_epoch_losses_split}, f)
-                elif 'AllQs' in FLAGS.experiment_name:
+                if 'AllQs' in FLAGS.experiment_name:
                     with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d_split.p' % (FLAGS.model_name, train_epoch_num + previous_trained_epochs, FLAGS.trial_num)), 'wb') as f:
                         pickle.dump({'accuracies':test_epoch_accuracies_split, 'losses':test_epoch_losses_split}, f)
 
@@ -500,8 +457,6 @@ if __name__ == '__main__':
     if args.function == 'train':
         FLAGS.num_epochs = int(args.num_epochs)
         FLAGS.save_every =  max(1, FLAGS.num_epochs//4)
-        if "curriculum" in FLAGS.experiment_name:
-            FLAGS.curriculum_regime = args.regime
         train(FLAGS)
     elif args.function == 'test':
         test_filename = args.test_filename

@@ -1,0 +1,36 @@
+{
+    "roles": ["SUBJECT", "DRINK", "FRIEND", "EMCEE", "POET", "DESSERT"],
+    "role_types": {
+        "SUBJECT": "Person",
+        "DRINK": "Drink",
+        "FRIEND": "Person",
+        "EMCEE": "Person",
+        "POET": "Person",
+        "DESSERT": "Dessert"
+    },
+    "transitions": {
+        "begin": ["drink", "sit"],
+        "drink": ["expensive", "sit"],
+        "expensive": ["sit"],
+        "sit": ["intro", "poetry"],
+        "intro": ["poetry"],
+        "poetry": ["perform", "decline"],
+        "perform": ["goodbye"],
+        "decline": ["goodbye"],
+        "goodbye": ["dessert", "end"],
+        "dessert": ["end"]
+    },
+    "state_contents": {
+        "begin": ["begin", "SUBJECT"],
+        "drink": ["order", "SUBJECT", "DRINK"],
+        "expensive": ["expensive", "SUBJECT"],
+        "sit": ["sit", "SUBJECT", "FRIEND"],
+        "intro": ["intro", "EMCEE", "POET"],
+        "poetry": ["poetry", "POET"],
+        "perform": ["perform", "SUBJECT"],
+        "decline": ["decline", "SUBJECT"],
+        "goodbye": ["goodbye", "SUBJECT", "FRIEND"],
+        "dessert": ["order", "DESSERT"],
+        "end": ["end", "SUBJECT"]
+    }
+}
