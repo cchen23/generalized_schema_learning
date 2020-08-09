@@ -141,7 +141,7 @@ def shift_inputs(batchX, experiment_name, return_padding_location=False):
         padding_index = 27
     elif experiment_name == "fixedfiller_gensymbolicstates_100000_1_testunseen_AllQs":
         padding_index = 27
-    elif experiment_name in ["probe_role_statistic_recall", "probe_role_statistic_recall_normalize"]:
+    elif experiment_name in ["probe_role_statistic_recall", "probe_role_statistic_recall_normalize", "probe_role_statistic_recall_normalize_50"]:
         padding_index = 5017
     elif experiment_name in ["probe_role_statistic_recall_normalize_75", "probe_role_statistic_recall_normalize_90", "probe_role_statistic_recall_normalize_100"]:
         padding_index = 23017

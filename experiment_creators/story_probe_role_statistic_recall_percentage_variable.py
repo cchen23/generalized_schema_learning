@@ -239,5 +239,7 @@ def generate_experiments(num_dims=50,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--percentage', default=90, type=int)
+    parser.add_argument('--num-train-per-category', default=1000, type=int)
     args = parser.parse_args()
-    generate_experiments(percentage=args.percentage)
+    generate_experiments(percentage=args.percentage,
+            num_train_fillers_per_category=args.num_train_per_category)
