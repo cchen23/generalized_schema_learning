@@ -161,15 +161,15 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
                 query = query_starter + queried_role
                 response = role_assignments[queried_role]
 
-            # If necessary, add padding to end of story (ensures that inputs are all the same length).
-            story += [padding_word] * (padding_size + 1)  # so we can shift all stories later.
-            story += [query_delimiter, query]
-            outputs = [response]
+                # If necessary, add padding to end of story (ensures that inputs are all the same length).
+                story += [padding_word] * (padding_size + 1)  # so we can shift all stories later.
+                story += [query_delimiter, query]
+                outputs = [response]
 
-            # Convert to numerical representation and add to X and y.
-            data_index = (num_unseen_examples_per_frame * frame_index) + example_index
-            test_unseen_X[data_index, :, :] = np.expand_dims([wordslist.index(storyword) for storyword in story], axis=1)
-            test_unseen_y[data_index, :] = [wordslist.index(output_word) for output_word in outputs]
+                # Convert to numerical representation and add to X and y.
+                data_index = (num_unseen_examples_per_frame * frame_index) + example_index
+                test_unseen_X[data_index, :, :] = np.expand_dims([wordslist.index(storyword) for storyword in story], axis=1)
+                test_unseen_y[data_index, :] = [wordslist.index(output_word) for output_word in outputs]
 
     # Assert no repeated stories.
     X, unique_seen_indices = np.unique(X, axis=0, return_index=True)
