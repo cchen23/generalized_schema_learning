@@ -151,9 +151,9 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
             role_assignments = {}
             for role in frame_roles:
                 if 'fixedfiller' in experiment_name:
-                    role_assignment = np.random.choice(train_instances[role_types[role]])
+                    role_assignment = np.random.choice(test_instances[role_types[role]])
                     while role_assignment in role_assignments.values():
-                        role_assignment = np.random.choice(train_instances[role_types[role]])
+                        role_assignment = np.random.choice(test_instances[role_types[role]])
                 elif 'variablefiller' in experiment_name:
                     role_assignment = '%sFILLER' % role
                 role_assignments[role] = role_assignment
@@ -174,10 +174,12 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
     # Assert no repeated stories.
 
     num_train = int(4 * num_examples / 5)
-    train_X = X[:num_train, :, :]
-    train_y = y[:num_train, :]
-    test_X = X[num_train:, :, :]
-    test_y = y[num_train:, :]
+    train_indices = np.random.choice(len(X), num_train, replace=False)
+    test_indices = np.array([idx for idx in range(len(X)) if idx not in train_indices])
+    train_X = X[train_indices, :, :]
+    train_y = y[train_indices, :]
+    test_X = X[test_indices, :, :]
+    test_y = y[test_indices, :]
 
     # Save data into pickle files.
     if not os.path.exists(experiment_data_path):
