@@ -132,6 +132,7 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
                 elif 'variablefiller' in experiment_name:
                     role_assignment = '%sFILLER' % role
                 role_assignments[role] = role_assignment
+            story = [role_assignments[word] if word in role_assignments else word for word in story]
             queried_role = np.random.choice(role_assignments.keys())
             query = query_starter + queried_role
             response = role_assignments[queried_role]
