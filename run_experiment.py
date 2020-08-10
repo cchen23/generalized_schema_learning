@@ -11,13 +11,12 @@ import time
 
 from data_util import generate_epoch
 from architecture_models.model import fast_weights_model
-from architecture_models.connect_DNC import dnc_model
 from architecture_models.connect_NTM2 import ntm2_model
-from architecture_models.custom_GRU import gru_model
 from architecture_models.custom_LSTMLN import lstmln_model
 from hard_coded_things import experiment_parameters, embedding_size
 
 base_dir = directories.base_dir
+
 
 class parameters():
     def __init__(self):
@@ -26,9 +25,9 @@ class parameters():
         Contains experiment information and directory locations.
         """
         self.num_hidden_units = embedding_size
-        self.l = 0.95 # decay lambda
-        self.e = 0.5 # learning rate eta
-        self.S = 1 # num steps to get to h_S(t+1) (Parameter for Fast Weights.)
+        self.l = 0.95  # decay lambda
+        self.e = 0.5  # learning rate eta
+        self.S = 1  # num steps to get to h_S(t+1) (Parameter for Fast Weights.)
         self.learning_rate = 1e-4
         self.max_gradient_norm = 5.0
 
@@ -60,6 +59,7 @@ class parameters():
         if not os.path.exists(self.results_dir):
             os.makedirs(self.results_dir)
 
+
 def get_embedding(FLAGS):
     """Retrieves word embedding for experiment.
 
@@ -76,8 +76,9 @@ def get_embedding(FLAGS):
     num_words = len(embedding)
     embedding_matrix = np.empty([num_words, embedding_size])
     for i in range(num_words):
-        embedding_matrix[i,:] = embedding[i]['vector']
+        embedding_matrix[i, :] = embedding[i]['vector']
     return embedding_matrix
+
 
 def get_clean_model(FLAGS):
     """Retrieves a previously untrained network.
@@ -100,6 +101,7 @@ def get_clean_model(FLAGS):
     else:
         raise ValueError('Illegal model name')
     return model
+
 
 def create_model(sess, FLAGS):
     """Creates model.
@@ -126,13 +128,14 @@ def create_model(sess, FLAGS):
         latest_checkpoint_path = tf.train.latest_checkpoint(FLAGS.ckpt_dir)
         print("Restoring old model parameters from %s" % latest_checkpoint_path)
         model.saver.restore(sess, latest_checkpoint_path)
-        previous_trained_epochs = int(latest_checkpoint_path.split("/")[-1].split(".")[-1].split("-")[-1]) # Better way to do this?
+        previous_trained_epochs = int(latest_checkpoint_path.split("/")[-1].split(".")[-1].split("-")[-1])
     else:
         print("Created new model.")
         sess.run(tf.global_variables_initializer())
         previous_trained_epochs = 0
     print("Previously trained for %d epochs" % previous_trained_epochs)
     return model, previous_trained_epochs
+
 
 def load_data(data_path):
     """Helper module to load input and output data."""
@@ -142,6 +145,7 @@ def load_data(data_path):
     X = np.array(X, dtype=int)
     y = np.array(y, dtype=int)
     return X, y
+
 
 def get_meantestinfo(sess, test_X, test_y, FLAGS, model, embedding):
     """Helper module to get mean test accuracy and loss."""
@@ -154,15 +158,10 @@ def get_meantestinfo(sess, test_X, test_y, FLAGS, model, embedding):
             test_batch_loss.append(loss)
     return np.mean(test_batch_accuracy), np.mean(test_batch_loss)
 
+
 def train(FLAGS):
     """Trains and tests the model.
 
-    Note: experiments fall into two dataset types: Standard, and Curriculum Learning.
-          Standard: Train data saved in train.p, test data saved in test.p.
-          Curriculum Learning: Used for experiments that introduce new tasks
-                               during training. Trainsets for current regime can
-                               be manually tuned in the code. Currently hard-coded
-                               for curricula with QSubject and QFriend.
     Note: Split datasets must be specifically created. See README/wiki for more details.
     Args:
         FLAGS: Parameters object for the experiment.
@@ -178,9 +177,9 @@ def train(FLAGS):
     test_X, test_y = load_data(os.path.join(FLAGS.data_dir, 'test.p'))
     # Load split datasets.
     if 'AllQs' in FLAGS.experiment_name:
-        split_test_names = ['QSubject', 'QPoet', 'QDessert_bought', 'QDrink_bought', 'QEmcee', 'QFriend']
-        split_test_X = []
-        split_test_y = []
+        split_test_names = ['QPOET', 'QSUBJECT', 'QDESSERT', 'QEMCEE', 'QDRINK', 'QFRIEND', 'unseen']
+        split_test_X = {}
+        split_test_y = {}
         for test_name in split_test_names:
             test_X, test_y = load_data(os.path.join(FLAGS.data_dir, 'test_%s.p' % test_name))
             split_test_X[test_name] = test_X
@@ -205,7 +204,7 @@ def train(FLAGS):
                 train_epoch_loss = []; test_epoch_loss = []
                 train_epoch_accuracy = []; test_epoch_accuracy = []
                 train_epoch_gradient_norm = []
-                if 'AllQs' in  FLAGS.experiment_name:
+                if 'AllQs' in FLAGS.experiment_name:
                     test_epoch_accuracies_split = {test_name: [] for test_name in split_test_names}
                     test_epoch_losses_split = {test_name: [] for test_name in split_test_names} 
         for train_epoch_num, train_epoch in enumerate(generate_epoch(train_X, train_y, FLAGS.num_epochs, FLAGS, embedding)):
@@ -233,17 +232,15 @@ def train(FLAGS):
 
             # Test.
             test_start_time = time.time()
-            test_batch_loss = []
-            test_batch_accuracy = []
             mean_test_batch_accuracy, mean_test_batch_loss = get_meantestinfo(sess, test_X, test_y, FLAGS, model, embedding)
             test_epoch_accuracy.append(mean_test_batch_accuracy)
             test_epoch_loss.append(mean_test_batch_loss)
 
             if 'AllQs' in FLAGS.experiment_name:
-                for test_name in split_test_names.keys():
+                for test_name in split_test_names:
                     mean_test_batch_accuracy, mean_test_batch_loss = get_meantestinfo(sess, split_test_X[test_name], split_test_y[test_name], FLAGS, model, embedding)
                     test_epoch_accuracies_split[test_name].append(mean_test_batch_accuracy)
-                    test_epoch_losses_split[test_name].append(mean_test_batch_losss)
+                    test_epoch_losses_split[test_name].append(mean_test_batch_loss)
             print ('Epoch: [%i/%i] time: %.4f, test loss: %.7f,'
                     ' test acc: %.7f' % (train_epoch_num, FLAGS.num_epochs,
                         time.time() - test_start_time, test_epoch_loss[-1],
@@ -429,14 +426,13 @@ if __name__ == '__main__':
     parser.add_argument('--function', help='Desired function.', choices=["train", "test", "analyze", "probe"], required=True)
     parser.add_argument('--exp_name', help='Name of folder containing experiment data.', type=str, required=True)
     parser.add_argument('--filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions"], required=True)
-    parser.add_argument('--checkpoint_filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions"], required=True)
+    parser.add_argument('--checkpoint_filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions"])
     parser.add_argument('--model_name', help='Name of architecture.', choices=["CONTROL", "DNC", "GRU-LN", "LSTM-LN", "NTM2", "RNN-LN", "RNN-LN-FW"], required=True)
 
     parser.add_argument('--num_epochs', help='Number of epochs to train. Only used for train function.', type=int)
 
     parser.add_argument('--test_filename', help='Required if using test function: Name of file containing test data.', type=str)
 
-    parser.add_argument('--regime', help='Required if running curriculum experiment.', choices=["SUBJECT", "POET", "COMBINED"])
     parser.add_argument('--trial_num', help='Integer label for trial.', type=int, required=True)
     args=parser.parse_args()
 

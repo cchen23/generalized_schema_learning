@@ -50,3 +50,7 @@ def test_variable_filler():
     all_y = np.concatenate([train_y, test_y, unseen_test_y], axis=0)
     for example_num in range(len(all_X)):
         assert(all_y[example_num] in all_X[example_num])
+
+if __name__ == '__main__':
+    test_fixed_filler()
+    test_variable_filler()

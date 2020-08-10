@@ -72,8 +72,8 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
                         (Each X and y matrix represents words by their index in
                         the word list.)
     """
+    experiment_name += "_AllQs"
     experiment_data_path = os.path.join(base_dir, "data", experiment_name)
-    experiment_data_path += "_AllQs"
     query_delimiter = "?"
     query_starter = "Q"
     padding_word = "zzz"

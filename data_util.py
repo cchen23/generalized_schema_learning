@@ -83,7 +83,7 @@ def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True):
 
 def shift_inputs(batchX, experiment_name, return_padding_location=False):
     # NOTE: Padding indices manually determined using word list saved by experiment creators.
-    padding_index = experiment_parameters['padding_indices'][FLAGS.experiment_name]
+    padding_index = experiment_parameters['padding_indices'][experiment_name]
     batch_size = batchX.shape[0]
     new_X = np.zeros(batchX.shape, dtype=np.int16)
     for i in range(len(batchX)):
