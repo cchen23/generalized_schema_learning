@@ -147,21 +147,19 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
             X[data_index, :, :] = np.expand_dims([wordslist.index(storyword) for storyword in story], axis=1)
             y[data_index, :] = [wordslist.index(output_word) for output_word in outputs]
 
-        for example_index in range(num_unseen_examples_per_frame):
-            story = copy.deepcopy(frame)
-            role_assignments = {}
-            for role in frame_roles:
-                if 'fixedfiller' in experiment_name:
+        if 'fixedfiller' in experiment_name:
+            for example_index in range(num_unseen_examples_per_frame):
+                story = copy.deepcopy(frame)
+                role_assignments = {}
+                for role in frame_roles:
                     role_assignment = np.random.choice(test_instances[role_types[role]])
                     while role_assignment in role_assignments.values():
                         role_assignment = np.random.choice(test_instances[role_types[role]])
-                elif 'variablefiller' in experiment_name:
-                    role_assignment = '%sFILLER' % role
-                role_assignments[role] = role_assignment
-            story = [role_assignments[word] if word in role_assignments else word for word in story]
-            queried_role = np.random.choice(list(role_assignments.keys()))
-            query = query_starter + queried_role
-            response = role_assignments[queried_role]
+                    role_assignments[role] = role_assignment
+                story = [role_assignments[word] if word in role_assignments else word for word in story]
+                queried_role = np.random.choice(list(role_assignments.keys()))
+                query = query_starter + queried_role
+                response = role_assignments[queried_role]
 
             # If necessary, add padding to end of story (ensures that inputs are all the same length).
             story += [padding_word] * (padding_size + 1)  # so we can shift all stories later.
@@ -174,26 +172,24 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
             test_unseen_y[data_index, :] = [wordslist.index(output_word) for output_word in outputs]
 
     # Assert no repeated stories.
-
-    unique_seen_indices = np.unique(X, axis=0)
-    X = np.squeeze(X[unique_seen_indices], axis=-1)
-    y = np.squeeze(y[unique_seen_indices], axis=-1)
+    X, unique_seen_indices = np.unique(X, axis=0, return_index=True)
+    y = y[unique_seen_indices]
 
     if 'fixedfiller' in experiment_name:
         num_train = int(4 * len(X)/ 5)
         train_indices = np.random.choice(len(X), num_train, replace=False)
         test_indices = np.array([idx for idx in range(len(X)) if idx not in train_indices])
+        train_X = X[train_indices, :, :]
+        train_y = y[train_indices, :]
+        test_X = X[test_indices, :, :]
+        test_y = y[test_indices, :]
+        test_unseen_X, unique_unseen_indices = np.unique(test_unseen_X, axis=0, return_index=True)
+        test_unseen_y = test_unseen_y[unique_unseen_indices]
     elif 'variablefiller' in experiment_name:
-        train_indices = range(len(X))
-        test_indices = range(len(X))
-    train_X = X[train_indices, :, :]
-    train_y = y[train_indices, :]
-    test_X = X[test_indices, :, :]
-    test_y = y[test_indices, :]
+        train_X, train_y = X, y
+        test_X, test_y = X, y
+        test_unseen_X, test_unseen_y = X, y
 
-    unique_unseen_indices = np.unique(test_unseen_X, axis=0)
-    test_unseen_X = np.squeeze(test_unseen_X[unique_unseen_indices], axis=-1)
-    test_unseen_y = np.squeeze(test_unseen_y[unique_unseen_indices], axis=-1)
     
     # Save data into pickle files.
     if not os.path.exists(experiment_data_path):
