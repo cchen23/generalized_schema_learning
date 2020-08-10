@@ -201,6 +201,8 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
     experiment_parameters['padding_indices'][experiment_name] = wordslist.index(padding_word)
 
 
+    with open('../experiment_parameters.json', 'w') as f:
+        json.dump(experiment_parameters, f)
     embedding = []
 
     for i in range(len(wordslist)):

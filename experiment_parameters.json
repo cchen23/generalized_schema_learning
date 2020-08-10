@@ -1,8 +1,1 @@
-{
-    "input_dims": {
-    },
-    "filler_indices": {
-    },
-    "padding_indices": {
-    }
-}
+{"filler_indices": {"variablefiller": [23, 1, 19, 27, 12, 21], "fixedfiller": [0, 2, 3, 27, 5, 6, 8, 9, 10, 11, 22, 19, 21, 4, 28, 29, 31, 40, 35, 37, 38, 32, 41, 43, 33, 47]}, "input_dims": {"variablefiller": 27, "fixedfiller": 27}, "padding_indices": {"variablefiller": 15, "fixedfiller": 26}}
