@@ -181,9 +181,9 @@ def train(FLAGS):
         split_test_X = {}
         split_test_y = {}
         for test_name in split_test_names:
-            test_X, test_y = load_data(os.path.join(FLAGS.data_dir, 'test_%s.p' % test_name))
-            split_test_X[test_name] = test_X
-            split_test_y[test_name] = test_y
+            test_X_split, test_y_split = load_data(os.path.join(FLAGS.data_dir, 'test_%s.p' % test_name))
+            split_test_X[test_name] = test_X_split
+            split_test_y[test_name] = test_y_split
 
     embedding = get_embedding(FLAGS)
 
