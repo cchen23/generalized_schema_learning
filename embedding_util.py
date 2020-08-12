@@ -11,10 +11,19 @@ def normalize(a):
     """Return normalized vector."""
     return a/np.linalg.norm(a)
 
-def create_word_vector(filler_distribution=None, normalize_filler_distribution=True):
+def create_word_vector(filler_distribution=None, normalize_filler_distribution=True, dominant_distribution_proportion=0.8):
     """Returns a random Gaussian vector with DIMS dimensions."""
     vector = np.random.normal(size=DIMS)
-    vector = normalize(vector)
+    if filler_distribution == "A":
+        if np.random.randn() < dominant_distribution_proportion:
+            vector[::2] += 0.5
+        else:
+            vector[::2] -= 0.5
+    elif filler_distribution == "B":
+        if np.random.randn() < dominant_distribution_proportion:
+            vector[::2] -= 0.5
+        else:
+            vector[::2] += 0.5
     if normalize_filler_distribution:
         vector = normalize(vector)
     return normalize(vector)

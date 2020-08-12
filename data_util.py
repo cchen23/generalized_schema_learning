@@ -20,7 +20,7 @@ def generate_epoch(X, y, num_epochs, FLAGS, embedding, do_shift_inputs=True):
     for epoch_num in range(num_epochs):
         yield generate_batch(X, y, FLAGS, embedding, do_shift_inputs=do_shift_inputs)
 
-def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True):
+def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True, noise_proportion=0.2):
     """Generate a train batch.
 
     Constructs batches using one of three possible representations (specified by
@@ -77,6 +77,36 @@ def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True):
                 embeddingX[examplenum,filler_ix_X] = new_filler_embedding[new_embedding_ix_X]
                 new_embedding_ix_y = [filler_indices.index(batchy[examplenum])]
                 embeddingy[examplenum] = new_filler_embedding[new_embedding_ix_y]
+                # Append embedding to original embedding identifying response.
+                epoch_embedding = np.concatenate((epoch_embedding, new_filler_embedding), axis=0)
+            yield embeddingX, embeddingy, epoch_embedding
+        elif filler_type == "variable_filler_distributions":
+            filler_indices_and_distributions = experiment_parameters["filler_distributions"][FLAGS.experiment_name]
+            query_to_filler_indices = experiment_parameters["query_to_filler_index"][FLAGS.experiment_name]
+            filler_indices = list(filler_indices_and_distributions.keys())
+            filler_distributions = [filler_indices_and_distributions[filler_index] for filler_index in filler_indices]
+            batchX, batchy = X[start_index:end_index].squeeze(), y[start_index:end_index].squeeze()
+            if FLAGS.function != "analyze" and do_shift_inputs: # Don't randomly shift inputs for decoding analysis.
+                batchX = shift_inputs(batchX, FLAGS.experiment_name)
+            embeddingX, embeddingy = embedding[batchX], embedding[batchy]
+            epoch_embedding = embedding
+            for examplenum in range(batch_size):
+                # Create new random embedding for each filler.
+                num_fillers = len(filler_indices)
+                new_filler_embedding = np.empty((num_fillers, embedding_size))
+                for j, filler_distribution in enumerate(filler_distributions):
+                    new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=filler_distribution)
+                # Replace filler embedding with new random embedding.
+                filler_ix_X = np.where(np.isin(batchX[examplenum], filler_indices))
+                new_embedding_ix_X = [filler_indices.index(i) for i in batchX[examplenum,filler_ix_X][0]]
+                embeddingX[examplenum,filler_ix_X] = new_filler_embedding[new_embedding_ix_X]
+                new_embedding_ix_y = [filler_indices.index(str(batchy[examplenum]))]
+                embeddingy[examplenum] = new_filler_embedding[new_embedding_ix_y]
+                # Replace with noise vector if this is a noise trial. 
+                if np.random.rand() < noise_proportion:
+                    queried_filler_index = query_to_filler_indices[str(batchX[examplenum, -1])]
+                    queried_filler_indices = np.where(batchX[examplenum] == queried_filler_index)
+                    embeddingX[examplenum, queried_filler_indices] = np.zeros(embedding_size)
                 # Append embedding to original embedding identifying response.
                 epoch_embedding = np.concatenate((epoch_embedding, new_filler_embedding), axis=0)
             yield embeddingX, embeddingy, epoch_embedding
