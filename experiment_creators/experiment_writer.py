@@ -77,6 +77,14 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
     query_delimiter = "?"
     query_starter = "Q"
     padding_word = "zzz"
+    distributions_dict = {
+            "DESSERT": "A",
+            "DRINK": "B",
+            "EMCEE": "A",
+            "FRIEND": "B",
+            "POET": "A",
+            "SUBJECT": "B",
+            }
     if not os.path.exists(experiment_data_path):
         os.makedirs(experiment_data_path)
 
@@ -211,6 +219,11 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
     fillers = list(set(flatten_arrays(train_instances.values()) + flatten_arrays(test_instances.values())))
     experiment_parameters['filler_indices'][experiment_name] = [wordslist.index(filler) for filler in fillers]
     experiment_parameters['padding_indices'][experiment_name] = wordslist.index(padding_word)
+
+    if 'variablefiller' in experiment_name:
+        experiment_parameters['query_to_filler_index'][experiment_name] = {wordslist.index(query_starter + role): [wordslist.index(filler) for filler in dummy_instances[role]] for role in role_types.keys()}
+        filler_distributions_dict = {wordslist.index(dummy_instances[role][0]): distributions_dict[role] for role in role_types.keys()}
+        experiment_parameters['filler_distributions'][experiment_name] = filler_distributions_dict
 
 
     with open('../experiment_parameters.json', 'w') as f:
