@@ -25,7 +25,6 @@ import sonnet as snt
 import tensorflow as tf
 
 import addressing
-import util
 
 AccessState = collections.namedtuple('AccessState', (
     'memory', 'read_weights', 'write_weights'))
@@ -79,7 +78,7 @@ class MemoryAccess(snt.RNNCore):
 
   def __init__(self,
                memory_size=128,
-               word_size=20,
+               word_size=50,
                num_reads=1,
                num_writes=1,
                name='memory_access'):
@@ -102,7 +101,6 @@ class MemoryAccess(snt.RNNCore):
         num_writes, word_size, name='write_content_weights')
     self._read_content_weights_mod = addressing.CosineWeights(
         num_reads, word_size, name='read_content_weights')
-    SHIFT_RANGE = 1
 
   def _build(self, inputs, prev_state):
     """Connects the MemoryAccess module into the graph.
@@ -118,7 +116,6 @@ class MemoryAccess(snt.RNNCore):
       `AccessState` named tuple at the current time t.
     """
     inputs = self._read_inputs(inputs)
-
     # Write to memory.
     write_weights = self._write_weights(inputs, prev_state.memory, prev_write_weights=prev_state.write_weights)
     memory = _erase_and_write(
@@ -192,12 +189,12 @@ class MemoryAccess(snt.RNNCore):
         'write_content_strengths': write_strengths,
         'write_vectors': write_vectors,
         'erase_vectors': erase_vectors,
-        'interpolation_gate_write': interpolation_gate,
+        'interpolation_gate_write': interpolation_gate_write,
         # 'shift_weighting_write': shift_weighting, NOTE: Reduced NTM has no shift weighting.
-        'gamma_write': gamma,
-        'interpolation_gate_read': interpolation_gate,
+        'gamma_write': gamma_write,
+        'interpolation_gate_read': interpolation_gate_read,
         # 'shift_weighting_read': shift_weighting, NOTE: Reduced NTM has no shift weighting.
-        'gamma_read': gamma,
+        'gamma_read': gamma_read,
     }
     return result
 
@@ -220,24 +217,24 @@ class MemoryAccess(snt.RNNCore):
       tensor of shape `[batch_size, num_writes, memory_size]` indicating where
           to write to (if anywhere) for each write head.
     """
-    with tf.name_scope('write_weights', values=[inputs, memory, usage]):
+    with tf.name_scope('write_weights', values=[inputs, memory]):
       # c_t^{w, i} - The content-based weights for each write head.
       write_content_weights = self._write_content_weights_mod(
           memory, inputs['write_content_keys'],
           inputs['write_content_strengths'])
 
       # w_t^g
-      interpolation_gate = tf.expand_dims(inputs['interpolation_gate_write'],1)
-      gated_weighting = interpolation_gate * content_weights + (1.0 - interpolation_gate) * prev_write_weights
+      interpolation_gate = tf.expand_dims(inputs['interpolation_gate_write'], 2)
+      gated_weighting = interpolation_gate * write_content_weights + (1.0 - interpolation_gate) * prev_write_weights
 
       # w_t_bar
       # shift_weighting = tf.reshape(inputs['shift_weighting_write'], #  NOTE: Reduced NTM has no shift weighting.
       w_bar = gated_weighting
-      gamma = tf.expand_dims(inputs['gamma_write'],1)
+      gamma = tf.expand_dims(inputs['gamma_write'], 2)
       w_bar_gamma = tf.pow(w_bar, gamma)
       w = w_bar_gamma / tf.reduce_sum(w_bar_gamma)
       # w_t^{w, i} - The write weightings for each write head.
-      return w_bar_gamma
+      return w
 
   def _read_weights(self, inputs, memory, prev_read_weights):
     """Calculates read weights for each read head.
@@ -266,13 +263,13 @@ class MemoryAccess(snt.RNNCore):
           memory, inputs['read_content_keys'], inputs['read_content_strengths'])
 
       # w_t^g
-      interpolation_gate = tf.expand_dims(inputs['interpolation_gate_read'],1)
-      gated_weighting = interpolation_gate * content_weights + (1.0 - interpolation_gate) * prev_write_weights
+      interpolation_gate = tf.expand_dims(inputs['interpolation_gate_read'], 2)
+      gated_weighting = interpolation_gate * content_weights + (1.0 - interpolation_gate) * prev_read_weights
 
       # w_t_bar
       # shift_weighting = tf.reshape(inputs['shift_weighting_read'], # NOTE: Reduced NTM has no shift weighting.
       w_bar = gated_weighting
-      gamma = tf.expand_dims(inputs['gamma_read'],1)
+      gamma = tf.expand_dims(inputs['gamma_read'], 2)
       w_bar_gamma = tf.pow(w_bar, gamma)
       w = w_bar_gamma / tf.reduce_sum(w_bar_gamma)
       return w
