@@ -425,8 +425,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--function', help='Desired function.', choices=["train", "test", "analyze", "probe"], required=True)
     parser.add_argument('--exp_name', help='Name of folder containing experiment data.', type=str, required=True)
-    parser.add_argument('--filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions"], required=True)
-    parser.add_argument('--checkpoint_filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions"])
+    parser.add_argument('--filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions", "variable_filler_distributions_all_randn_distribution", "variable_filler_distributions_one_distribution", "variable_filler_distributions_no_subtract"], required=True)
+    parser.add_argument('--checkpoint_filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions", "variable_filler_distributions_all_randn_distribution", "variable_filler_distributions_one_distribution", "variable_filler_distributions_no_subtract"])
     parser.add_argument('--model_name', help='Name of architecture.', choices=["CONTROL", "DNC", "GRU-LN", "LSTM-LN", "NTM2", "RNN-LN", "RNN-LN-FW"], required=True)
 
     parser.add_argument('--num_epochs', help='Number of epochs to train. Only used for train function.', type=int)
