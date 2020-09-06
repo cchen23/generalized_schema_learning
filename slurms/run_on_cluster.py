@@ -7,6 +7,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--function', default='train')
 parser.add_argument('--experiment-name')
 parser.add_argument('--filler-type', default='fixed_filler')
+parser.add_argument('--model-names', nargs='+')
 parser.add_argument('--model-names-and-num-epochs',
                     nargs='+',
                     default=['NTM2_50', 'RNN-LN-FW_1000'],
@@ -32,10 +33,10 @@ module load cudatoolkit/9.0
 if args.function == "train":
     for trial_num in args.trial_nums:
         for model_name_and_num_epoch in args.model_names_and_num_epochs:
-            output = "/home/cc27/Thesis/generalized_schema_learning/slurms/outputs/train_experiment{experiment_name}_{model_name}_{function}_trial{trial_num}_start{datetime}_%j.txt"
+            output = "/home/cc27/Thesis/generalized_schema_learning/slurms/outputs/train_experiment{experiment_name}_{model_name}_{function}_trial{trial_num}_start{datetime}_{filler_type}%j.txt"
             cmd = sb_cmd + "\npython -u {script} --function={function} --exp_name={experiment_name} --filler_type={filler_type} --model_name={model_name} --trial_num={trial_num} --num_epochs={num_epochs}"
             model_name, num_epochs = model_name_and_num_epoch.split('_')
-            this_output = output.format(model_name=model_name, function=args.function, experiment_name=args.experiment_name, datetime=time.strftime("%y%m%d") + "_" + time.strftime("%H%M%D").replace("/", ""), trial_num=trial_num)
+            this_output = output.format(model_name=model_name, function=args.function, experiment_name=args.experiment_name, datetime=time.strftime("%y%m%d") + "_" + time.strftime("%H%M%D").replace("/", ""), trial_num=trial_num, filler_type=args.filler_type)
             sbproc = subprocess.Popen(["sbatch",
                                        "--output=" + this_output,
                                        "-J", model_name,
@@ -51,29 +52,45 @@ if args.function == "train":
             print('********')
             #print(this_output)
             sbproc.communicate(thiscmd)
-elif args.function == "probe_statistics":
-    i = 0
+elif args.function == "probe_ambiguous":
     for test_filename in args.test_filenames:
         for trial_num in args.trial_nums:
-            for model_name_and_num_epoch in args.model_names_and_num_epochs:
-                model_name, num_epochs = model_name_and_num_epoch.split('_')
-                sb_cmd += "\npython -u {script} --function={function} --exp_name={experiment_name} --filler_type={filler_type} --model_name={model_name} --trial_num={trial_num} --test_filename={test_filename}"
-                output = "/home/cc27/Thesis/generalized_/schema_learning/slurms/outputs/probestatistics_experiment{experiment_name}_{model_name}_{function}_trial{trial_num}_{datetime}_%j.txt"
+            for model_name in args.model_names:
+                cmd = sb_cmd + "\npython -u {script} --function={function} --exp_name={experiment_name} --filler_type={filler_type} --model_name={model_name} --trial_num={trial_num} --test_filename={test_filename}"
+                output = "/home/cc27/Thesis/generalized_schema_learning/slurms/outputs/probeambiguous_experiment{experiment_name}_{model_name}_{function}_trial{trial_num}_{datetime}_%j.txt"
+                this_output = output.format(model_name=model_name, function=args.function, experiment_name=args.experiment_name, datetime=time.strftime("%y%m%d") + "_" + time.strftime("%H%M%D").replace("/", ""), trial_num=trial_num)
+                print(this_output)
                 sbproc = subprocess.Popen(["sbatch",
-                                           "--output=" + output.format(model_name=model_name, function=args.function, experiment_name=args.experiment_name, test_filename=test_filename, datetime=time.strftime("%y%m%d") + "_" + time.strftime("%H%M%D").replace("/", ""), trial_num=trial_num),
+                                           "--output=" + this_output,
                                            "-J", model_name,
                                            "-p", "all",
                                            "-t", "1300",
-                                           "-N", "1",
-                                           "--ntasks-per-node", "4",
                                            "--gres", "gpu:1",
                                            "--mail-type", "FAIL, BEGIN, END",
                                            "--mail-user", "cc27@alumni.princeton.edu"
                                           ],
                                       stdin=subprocess.PIPE)
-                thiscmd = sb_cmd.format(script=script, function=args.function, experiment_name=args.experiment_name, filler_type=args.filler_type, model_name=model_name, trial_num=trial_num, test_filename=test_filename)
-                if i % 25 == 0:
-                    print("******")
-                    print(i)
-                i += 1
+                thiscmd = cmd.format(script=script, function=args.function, experiment_name=args.experiment_name, filler_type=args.filler_type, model_name=model_name, trial_num=trial_num, test_filename=test_filename)
+                print(thiscmd)
+                sbproc.communicate(thiscmd)
+elif args.function == "test":
+    for test_filename in args.test_filenames:
+        for trial_num in args.trial_nums:
+            for model_name in args.model_names:
+                cmd = sb_cmd + "\npython -u {script} --function={function} --exp_name={experiment_name} --filler_type={filler_type} --model_name={model_name} --trial_num={trial_num} --test_filename={test_filename}"
+                output = "/home/cc27/Thesis/generalized_schema_learning/slurms/outputs/probeambiguous_experiment{experiment_name}_{model_name}_{function}_trial{trial_num}_{datetime}_%j.txt"
+                this_output = output.format(model_name=model_name, function=args.function, experiment_name=args.experiment_name, datetime=time.strftime("%y%m%d") + "_" + time.strftime("%H%M%D").replace("/", ""), trial_num=trial_num)
+                print(this_output)
+                sbproc = subprocess.Popen(["sbatch",
+                                           "--output=" + this_output,
+                                           "-J", model_name,
+                                           "-p", "all",
+                                           "-t", "1300",
+                                           "--gres", "gpu:1",
+                                           "--mail-type", "FAIL, BEGIN, END",
+                                           "--mail-user", "cc27@alumni.princeton.edu"
+                                          ],
+                                      stdin=subprocess.PIPE)
+                thiscmd = cmd.format(script=script, function=args.function, experiment_name=args.experiment_name, filler_type=args.filler_type, model_name=model_name, trial_num=trial_num, test_filename=test_filename)
+                print(thiscmd)
                 sbproc.communicate(thiscmd)
