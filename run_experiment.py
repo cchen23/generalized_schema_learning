@@ -259,7 +259,7 @@ def train(FLAGS):
                     with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d_split.p' % (FLAGS.model_name, train_epoch_num + previous_trained_epochs, FLAGS.trial_num)), 'wb') as f:
                         pickle.dump({'accuracies':test_epoch_accuracies_split, 'losses':test_epoch_losses_split}, f)
 
-def test(FLAGS, test_filename, save_logits=False):
+def test(FLAGS, test_filename, save_logits=False, noise_proportion=0):
     """Perform error analysis on test set.
 
     Args:
@@ -288,7 +288,7 @@ def test(FLAGS, test_filename, save_logits=False):
         predictions = []
         responses = []
         saved_logits = []
-        for test_epoch_num, test_epoch in enumerate(generate_epoch(test_X, test_y, num_epochs=1, FLAGS=FLAGS, embedding=embedding, do_shift_inputs=False)):
+        for test_epoch_num, test_epoch in enumerate(generate_epoch(test_X, test_y, num_epochs=1, FLAGS=FLAGS, embedding=embedding, do_shift_inputs=False, noise_proportion=noise_proportion)):
             for test_batch_num, (batch_X, batch_y, batch_embedding) in enumerate(test_epoch):
                 print(test_batch_num)
                 if test_batch_num > 5:
@@ -423,10 +423,10 @@ if __name__ == '__main__':
     FLAGS = parameters()
     parser=argparse.ArgumentParser()
 
-    parser.add_argument('--function', help='Desired function.', choices=["train", "test", "analyze", "probe"], required=True)
+    parser.add_argument('--function', help='Desired function.', choices=["train", "test", "analyze", "probe", "probe_ambiguous"], required=True)
     parser.add_argument('--exp_name', help='Name of folder containing experiment data.', type=str, required=True)
-    parser.add_argument('--filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions", "variable_filler_distributions_all_randn_distribution", "variable_filler_distributions_one_distribution", "variable_filler_distributions_no_subtract"], required=True)
-    parser.add_argument('--checkpoint_filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions", "variable_filler_distributions_all_randn_distribution", "variable_filler_distributions_one_distribution", "variable_filler_distributions_no_subtract"])
+    parser.add_argument('--filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions", "variable_filler_distributions_all_randn_distribution", "variable_filler_distributions_one_distribution", "variable_filler_distributions_no_subtract", "variable_filler_distributions_noise"], required=True)
+    parser.add_argument('--checkpoint_filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions", "variable_filler_distributions_all_randn_distribution", "variable_filler_distributions_one_distribution", "variable_filler_distributions_no_subtract", "variable_filler_distributions_noise"])
     parser.add_argument('--model_name', help='Name of architecture.', choices=["CONTROL", "DNC", "GRU-LN", "LSTM-LN", "NTM2", "RNN-LN", "RNN-LN-FW"], required=True)
 
     parser.add_argument('--num_epochs', help='Number of epochs to train. Only used for train function.', type=int)
@@ -460,6 +460,9 @@ if __name__ == '__main__':
     elif args.function == 'probe':
         test_filename = args.test_filename
         test(FLAGS, test_filename, save_logits=True)
+    elif args.function == 'probe_ambiguous':
+        test_filename = args.test_filename
+        test(FLAGS, test_filename, save_logits=True, noise_proportion=1)
     elif args.function == 'analyze':
         test_filename = args.test_filename
         analyze(FLAGS, test_filename)
