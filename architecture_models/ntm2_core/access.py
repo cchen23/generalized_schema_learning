@@ -78,8 +78,8 @@ class MemoryAccess(snt.RNNCore):
 
   def __init__(self,
                memory_size=128,
-               word_size=50,
-               num_reads=1,
+               word_size=20,
+               num_reads=4,
                num_writes=1,
                name='memory_access'):
     """Creates a MemoryAccess module.
