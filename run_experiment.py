@@ -419,13 +419,14 @@ def analyze(FLAGS, test_filename):
                np.savez(f, memory_histories)
 
 if __name__ == '__main__':
-
+    print(tf.test.is_gpu_available(
+        cuda_only=False, min_cuda_compute_capability=None))
     FLAGS = parameters()
     parser=argparse.ArgumentParser()
 
     parser.add_argument('--function', help='Desired function.', choices=["train", "test", "analyze", "probe", "probe_ambiguous"], required=True)
     parser.add_argument('--exp_name', help='Name of folder containing experiment data.', type=str, required=True)
-    parser.add_argument('--filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions", "variable_filler_distributions_all_randn_distribution", "variable_filler_distributions_one_distribution", "variable_filler_distributions_no_subtract", "variable_filler_distributions_noise"], required=True)
+    parser.add_argument('--filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions", "variable_filler_distributions_all_randn_distribution", "variable_filler_distributions_one_distribution", "variable_filler_distributions_no_subtract", "variable_filler_distributions_noise", "variable_filler_distributions_A", "variable_filler_distributions_B", "variable_filler_distributions_5050_AB"], required=True)
     parser.add_argument('--checkpoint_filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions", "variable_filler_distributions_all_randn_distribution", "variable_filler_distributions_one_distribution", "variable_filler_distributions_no_subtract", "variable_filler_distributions_noise"])
     parser.add_argument('--model_name', help='Name of architecture.', choices=["CONTROL", "DNC", "GRU-LN", "LSTM-LN", "NTM2", "RNN-LN", "RNN-LN-FW"], required=True)
 

@@ -84,6 +84,12 @@ def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True, noise_proportio
                             new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=filler_distribution, dominant_distribution_proportion=1)
                         elif "variable_filler_distributions_all_randn_distribution" in filler_type:
                             new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="randn")
+                        elif "variable_filler_distributions_A" in filler_type:
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="A", dominant_distribution_proportion=1)
+                        elif "variable_filler_distributions_B" in filler_type:
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="B", dominant_distribution_proportion=1)
+                        elif "variable_filler_distributions_5050_AB" in filler_type:
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="B", dominant_distribution_proportion=0.5)
                         else:
                             new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=filler_distribution)
                 else:
