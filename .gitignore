@@ -1,5 +1,8 @@
 .ftpconfig
-checkpoints*
+checkpoints/
+data/
+results/
+slurms/outputs
 *.p
 *.png
 *.pyc

@@ -1,5 +1,6 @@
 """Helper modules for embeddings."""
 import numpy as np
+import pickle
 try:
     import tensorflow as tf
 except:

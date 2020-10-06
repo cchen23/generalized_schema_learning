@@ -19,7 +19,7 @@ class ntm2_model(object):
     def __init__(self, FLAGS):
         FLAGS.hidden_size = 50
         FLAGS.memory_size = 128
-        FLAGS.word_size = 20
+        FLAGS.word_size = 50
         FLAGS.num_write_heads = 1
         FLAGS.num_read_heads = 4
         FLAGS.clip_value = 20
@@ -74,14 +74,10 @@ class ntm2_model(object):
                     self.gate_history = tf.concat([self.gate_history, tf.expand_dims(self.gates, axis=2)], axis=2)
                     self.hidden_history = tf.concat([self.hidden_history, tf.expand_dims(self.ntm2state.controller_state.hidden, axis=2)], axis=2)
                     self.memory_history = tf.concat([self.memory_history, tf.expand_dims(self.ntm2state.access_state.memory, axis=3)], axis=3)
-                    self.read_weight_history = tf.concat([self.read_weight_history, tf.expand_dims(self.ntm2state.access_state.read_weights, axis=3)], axis=3)
-                    self.write_weight_history = tf.concat([self.write_weight_history, tf.expand_dims(self.ntm2state.access_state.write_weights, axis=3)], axis=3)
                 else:
                     self.gate_history = tf.expand_dims(self.gates, axis=2)
                     self.hidden_history = tf.expand_dims(self.ntm2state.controller_state.hidden, axis=2)
                     self.memory_history = tf.expand_dims(self.ntm2state.access_state.memory, axis=3)
-                    self.read_weight_history = tf.expand_dims(self.ntm2state.access_state.read_weights, axis=3)
-                    self.write_weight_history = tf.expand_dims(self.ntm2state.access_state.write_weights, axis=3)
 
         # All inputs processed! Time for softmax
         self.logits = tf.matmul(self.new_output, self.W_softmax) + self.b_softmax
@@ -131,8 +127,6 @@ class ntm2_model(object):
             output_feed = [self.loss, self.accuracy]
         elif run_option == "analyze":
             output_feed = [self.loss, self.accuracy, (self.gate_history, self.hidden_history), self.memory_history]
-        elif run_option == "weights":
-            output_feed = [self.loss, self.accuracy, self.read_weight_history, self.write_weight_history]
         else:
             raise ValueError("Invalid run_option.")
         # process outputs
@@ -144,5 +138,3 @@ class ntm2_model(object):
             return outputs[0], outputs[1], outputs[2], outputs[3]
         elif run_option == "forward_only":
             return outputs[0], outputs[1]
-        elif run_option == "weights":
-            return outputs[0], outputs[1], outputs[2], outputs[3]

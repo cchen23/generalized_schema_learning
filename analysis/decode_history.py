@@ -18,7 +18,7 @@ from numpy.linalg import svd
 from sklearn.metrics.pairwise import cosine_similarity
 
 TITLE_FONTSIZE = 12
-X_FONTSIZE = 8
+X_FONTSIZE = 10
 
 filler_indices = {
     "QSubjectQFriend":{"Dessert":23, 'Drink':4, 'Emcee':11, 'Friend':9, 'Poet':12, 'Subject':1},
@@ -242,11 +242,10 @@ def run_trial(experiment_name, previous_trained_epochs, Y_type, model_name, hist
 if __name__ == '__main__':
     # Experiment: Subject, AllQs, etc.
     # Y_type: Filler to decode (Subject, Friend, etc.)
-    experiment_name = sys.argv[1]
-    previous_trained_epochs = int(sys.argv[2])
-    Y_type = sys.argv[3]
-    model_name = sys.argv[4]
-    historypath = os.path.join(base_dir, "results", "variablefiller_gensymbolicstates_100000_1_testunseen_%s" % experiment_name, "variable_filler", "analysis")
+    previous_trained_epochs = int(sys.argv[1])
+    Y_type = sys.argv[2]
+    model_name = sys.argv[3]
+    historypath = os.path.join(base_dir, "results", "variablefiller_AllQs", "variable_filler", "analysis")
     savepath = os.path.join(base_dir, "figures")
     input_sequence = input_sequences[experiment_name]
     trial_num = 0

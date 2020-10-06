@@ -17,9 +17,9 @@ import ntm2
 class ntm2_model(object):
 
     def __init__(self, FLAGS):
-        FLAGS.hidden_size = 50
-        FLAGS.memory_size = 128
-        FLAGS.word_size = 20
+        FLAGS.hidden_size = 400
+        FLAGS.memory_size = 256
+        FLAGS.word_size = 50
         FLAGS.num_write_heads = 1
         FLAGS.num_read_heads = 4
         FLAGS.clip_value = 20
@@ -36,6 +36,8 @@ class ntm2_model(object):
         self.memory_history = None
         self.hidden_history = None
         self.gate_history = None
+        self.read_weight_history = None
+        self.write_weight_history = None
 
         with tf.variable_scope("NTM2"):
             # softmax weights (proper initialization)
@@ -68,7 +70,7 @@ class ntm2_model(object):
                 if t > 0:
                     scope.reuse_variables()
                 self.new_output, self.ntm2state, self.gates = self.ntm2_core(self.X[:, t, :], self.ntm2state)
-
+                
                 # Save history info
                 if t > 0:
                     self.gate_history = tf.concat([self.gate_history, tf.expand_dims(self.gates, axis=2)], axis=2)
@@ -76,12 +78,14 @@ class ntm2_model(object):
                     self.memory_history = tf.concat([self.memory_history, tf.expand_dims(self.ntm2state.access_state.memory, axis=3)], axis=3)
                     self.read_weight_history = tf.concat([self.read_weight_history, tf.expand_dims(self.ntm2state.access_state.read_weights, axis=3)], axis=3)
                     self.write_weight_history = tf.concat([self.write_weight_history, tf.expand_dims(self.ntm2state.access_state.write_weights, axis=3)], axis=3)
+                    self.ntm2state_history.append(self.ntm2state) 
                 else:
                     self.gate_history = tf.expand_dims(self.gates, axis=2)
                     self.hidden_history = tf.expand_dims(self.ntm2state.controller_state.hidden, axis=2)
                     self.memory_history = tf.expand_dims(self.ntm2state.access_state.memory, axis=3)
                     self.read_weight_history = tf.expand_dims(self.ntm2state.access_state.read_weights, axis=3)
                     self.write_weight_history = tf.expand_dims(self.ntm2state.access_state.write_weights, axis=3)
+                    self.ntm2state_history = [self.ntm2state] 
 
         # All inputs processed! Time for softmax
         self.logits = tf.matmul(self.new_output, self.W_softmax) + self.b_softmax
@@ -140,9 +144,9 @@ class ntm2_model(object):
 
         if run_option == "analyze":
             return outputs[0], outputs[1], outputs[2], outputs[3]
+        elif run_option == "weights":
+            return outputs[0], outputs[1], outputs[2], outputs[3]
         elif run_option == "backprop":
             return outputs[0], outputs[1], outputs[2], outputs[3]
         elif run_option == "forward_only":
             return outputs[0], outputs[1]
-        elif run_option == "weights":
-            return outputs[0], outputs[1], outputs[2], outputs[3]

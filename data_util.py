@@ -4,7 +4,7 @@ import embedding_util
 
 from hard_coded_things import experiment_parameters, embedding_size
 
-def generate_epoch(X, y, num_epochs, FLAGS, embedding, do_shift_inputs=True, noise_proportion=0.1):
+def generate_epoch(X, y, num_epochs, FLAGS, embedding, do_shift_inputs=True, noise_proportion=0.1, zero_vector_noise=False):
     """Generate a train epoch.
 
     Args:
@@ -18,9 +18,9 @@ def generate_epoch(X, y, num_epochs, FLAGS, embedding, do_shift_inputs=True, noi
         A generator containing num_epoch batches.
     """
     for epoch_num in range(num_epochs):
-        yield generate_batch(X, y, FLAGS, embedding, do_shift_inputs=do_shift_inputs, noise_proportion=noise_proportion)
+        yield generate_batch(X, y, FLAGS, embedding, do_shift_inputs=do_shift_inputs, noise_proportion=noise_proportion, zero_vector_noise=zero_vector_noise)
 
-def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True, noise_proportion=0.1):
+def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True, noise_proportion=0.1, zero_vector_noise=False):
     """Generate a train batch.
 
     Constructs batches using one of three possible representations (specified by
@@ -71,27 +71,51 @@ def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True, noise_proportio
             if FLAGS.function != "analyze" and do_shift_inputs: # Don't randomly shift inputs for decoding analysis.
                 batchX = shift_inputs(batchX, FLAGS.experiment_name)
             embeddingX, embeddingy = embedding[batchX], embedding[batchy]
+            padding_index = experiment_parameters['padding_indices'][FLAGS.experiment_name]
+            padding_vector = embedding[padding_index]
             epoch_embedding = embedding
             for examplenum in range(batch_size):
                 # Create new random embedding for each filler.
                 num_fillers = len(filler_indices)
                 new_filler_embedding = np.empty((num_fillers, embedding_size))
                 if "distributions" in filler_type:
-                    for j, filler_distribution in enumerate(filler_distributions):
-                        if "variable_filler_distributions_no_subtract" in filler_type: 
-                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="C")
-                        elif "variable_filler_distributions_one_distribution" in filler_type:
-                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=filler_distribution, dominant_distribution_proportion=1)
-                        elif "variable_filler_distributions_all_randn_distribution" in filler_type:
-                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="randn")
-                        elif "variable_filler_distributions_A" in filler_type:
-                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="A", dominant_distribution_proportion=1)
-                        elif "variable_filler_distributions_B" in filler_type:
-                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="B", dominant_distribution_proportion=1)
-                        elif "variable_filler_distributions_5050_AB" in filler_type:
-                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="B", dominant_distribution_proportion=0.5)
-                        else:
-                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=filler_distribution)
+                    subject_distribution = None
+                    if "second_order_subject" in filler_type:
+                        indices_to_fillers = {1: 'EMCEEFILLER', 12: 'SUBJECTFILLER', 19: 'DESSERTFILLER', 21: 'DRINKFILLER', 23: 'POETFILLER', 27: 'FRIENDFILLER'}
+                        subject_distribution = np.random.choice(['A', 'B'])
+                        for j, filler_index in enumerate(filler_indices):
+                            if indices_to_fillers[filler_index] == "SUBJECTFILLER":
+                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=subject_distribution, dominant_distribution_proportion=1)
+                            elif indices_to_fillers[filler_index] in ["FRIENDFILLER"]:
+                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=subject_distribution, dominant_distribution_proportion=0.9)
+                            else:
+                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="A", dominant_distribution_proportion=0.5)
+                    elif "fixed_subject" in filler_type:
+                        indices_to_fillers = {1: 'EMCEEFILLER', 12: 'SUBJECTFILLER', 19: 'DESSERTFILLER', 21: 'DRINKFILLER', 23: 'POETFILLER', 27: 'FRIENDFILLER'}
+                        subject_distribution = np.random.choice(['A_fixed', 'B_fixed'])
+                        for j, filler_index in enumerate(filler_indices):
+                            if indices_to_fillers[filler_index] == "SUBJECTFILLER":
+                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=subject_distribution, dominant_distribution_proportion=1)
+                            elif indices_to_fillers[filler_index] in ["FRIENDFILLER"]:
+                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=subject_distribution + '_filler', dominant_distribution_proportion=0.9)
+                            else:
+                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="A", dominant_distribution_proportion=0.5)
+                    else:
+                        for j, filler_distribution in enumerate(filler_distributions):
+                            if "variable_filler_distributions_no_subtract" in filler_type: 
+                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="C")
+                            elif "variable_filler_distributions_one_distribution" in filler_type:
+                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=filler_distribution, dominant_distribution_proportion=1)
+                            elif "variable_filler_distributions_all_randn_distribution" in filler_type:
+                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="randn")
+                            elif "variable_filler_distributions_A" in filler_type:
+                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="A", dominant_distribution_proportion=1)
+                            elif "variable_filler_distributions_B" in filler_type:
+                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="B", dominant_distribution_proportion=1)
+                            elif "variable_filler_distributions_5050_AB" in filler_type:
+                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="B", dominant_distribution_proportion=0.5)
+                            else:
+                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=filler_distribution)
                 else:
                     for j in range(num_fillers):
                         new_filler_embedding[j,:] = embedding_util.create_word_vector()
@@ -104,7 +128,11 @@ def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True, noise_proportio
                         print('noise trial')
                         queried_filler_index = query_to_filler_indices[str(batchX[examplenum, -1])]
                         queried_filler_indices = np.where(batchX[examplenum] == queried_filler_index)
-                        embeddingX[examplenum, queried_filler_indices] = np.zeros(embedding_size)
+                        if zero_vector_noise:
+                            print('zero vector noise')
+                            embeddingX[examplenum, queried_filler_indices] = np.zeros(padding_vector.shape)
+                        else:
+                            embeddingX[examplenum, queried_filler_indices] = padding_vector
                 new_embedding_ix_y = [filler_indices.index(batchy[examplenum])]
                 embeddingy[examplenum] = new_filler_embedding[new_embedding_ix_y]
                 # Append embedding to original embedding identifying response.

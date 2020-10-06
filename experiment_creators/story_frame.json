@@ -22,7 +22,7 @@
     },
     "state_contents": {
         "begin": ["begin", "SUBJECT"],
-        "drink": ["order", "SUBJECT", "DRINK"],
+        "drink": ["order_drink", "SUBJECT", "DRINK"],
         "expensive": ["expensive", "SUBJECT"],
         "sit": ["sit", "SUBJECT", "FRIEND"],
         "intro": ["intro", "EMCEE", "POET"],
@@ -30,7 +30,7 @@
         "perform": ["perform", "SUBJECT"],
         "decline": ["decline", "SUBJECT"],
         "goodbye": ["goodbye", "SUBJECT", "FRIEND"],
-        "dessert": ["order", "DESSERT"],
+        "dessert": ["order_dessert", "DESSERT"],
         "end": ["end", "SUBJECT"]
     }
 }
