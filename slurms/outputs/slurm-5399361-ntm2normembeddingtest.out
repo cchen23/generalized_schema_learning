@@ -1,0 +1,22 @@
+*******************************************************************
+Experiment: variablefiller_AllQs
+Model: NTM2
+Filler type: variable_filler
+Data directory: /home/cc27/Thesis/generalized_schema_learning/data/variablefiller_AllQs
+Checkpoint directory: /home/cc27/Thesis/generalized_schema_learning/checkpoints/variablefiller_AllQs/variable_filler/NTM2/trial100
+Results directory: /home/cc27/Thesis/generalized_schema_learning/results/variablefiller_AllQs/variable_filler
+*******************************************************************
+Loading datasets from directory /home/cc27/Thesis/generalized_schema_learning/data/variablefiller_AllQs:
+('/home/cc27/Thesis/generalized_schema_learning/data/variablefiller_AllQs/train.p', 'X shape: ', (112, 27, 1), 'y shape', (112, 1))
+('/home/cc27/Thesis/generalized_schema_learning/data/variablefiller_AllQs/test.p', 'X shape: ', (112, 27, 1), 'y shape', (112, 1))
+('/home/cc27/Thesis/generalized_schema_learning/data/variablefiller_AllQs/test_QSubject.p', 'X shape: ', (24, 27, 1), 'y shape', (24, 1))
+('/home/cc27/Thesis/generalized_schema_learning/data/variablefiller_AllQs/test_QPoet.p', 'X shape: ', (24, 27, 1), 'y shape', (24, 1))
+('/home/cc27/Thesis/generalized_schema_learning/data/variablefiller_AllQs/test_QDessert_bought.p', 'X shape: ', (12, 27, 1), 'y shape', (12, 1))
+Traceback (most recent call last):
+  File "/home/cc27/Thesis/generalized_schema_learning/run_experiment.py", line 493, in <module>
+    train(FLAGS)
+  File "/home/cc27/Thesis/generalized_schema_learning/run_experiment.py", line 193, in train
+    test_X_drink, test_y_drink = load_data(os.path.join(FLAGS.data_dir, 'test_QDrink_bought.p'))
+  File "/home/cc27/Thesis/generalized_schema_learning/run_experiment.py", line 144, in load_data
+    with open(data_path, 'rb') as f:
+IOError: [Errno 2] No such file or directory: '/home/cc27/Thesis/generalized_schema_learning/data/variablefiller_AllQs/test_QDrink_bought.p'

@@ -1,3 +1,6 @@
 .ftpconfig
 *.png
 *.pyc
+checkpoints/
+data/
+results/

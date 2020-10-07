@@ -9,6 +9,7 @@ input_dims = {
     "fixedfiller_gensymbolicstates_100000_1_testunseen_AllQs":29,
     "variablefiller_gensymbolicstates_100000_1_testunseen_AllQs":29,
     "variablefiller_gensymbolicstates_100000_1_testunseen_QSubject":29,
+    "variablefiller_AllQs":27,
 
     "fixedfiller_gensymbolicstates_100000_1_testunseen_QSubject":27,
     "variablefiller_gensymbolicstates_100000_1_testunseen_QSubjectQFriend":29,

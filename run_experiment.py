@@ -15,6 +15,7 @@ from architecture_models.connect_DNC import dnc_model
 from architecture_models.connect_NTM2 import ntm2_model
 from architecture_models.custom_GRU import gru_model
 from architecture_models.custom_LSTMLN import lstmln_model
+from embedding_util import create_word_vector
 from experiment_parameters import input_dims
 
 base_dir = directories.base_dir
@@ -53,6 +54,7 @@ class parameters():
         self.data_dir = os.path.join(self.data_dir, self.experiment_name)
         self.ckpt_dir = os.path.join(base_dir, 'checkpoints', self.experiment_name, self.filler_type, self.model_name, 'trial%d' % self.trial_num)
         self.results_dir = os.path.join(self.results_dir, self.experiment_name, self.filler_type)
+        self.embedding_type = args.embedding_type
 
         if not os.path.exists(self.results_dir):
             os.makedirs(self.results_dir)
@@ -74,7 +76,8 @@ def get_embedding(FLAGS):
     num_words = len(embedding)
     embedding_matrix = np.empty([num_words, embedding_dims])
     for i in range(num_words):
-        embedding_matrix[i,:] = embedding[i]['vector']
+        #embedding_matrix[i,:] = embedding[i]['vector']
+        embedding_matrix[i,:] = create_word_vector(FLAGS.embedding_type)
     return embedding_matrix
 
 def get_clean_model(FLAGS):
@@ -465,10 +468,13 @@ if __name__ == '__main__':
 
     parser.add_argument('--regime', help='Required if running curriculum experiment.', choices=["SUBJECT", "POET", "COMBINED"])
     parser.add_argument('--trial_num', help='Integer label for trial.', type=int, required=True)
+    parser.add_argument('--embedding_type', help='Type of embedding to use', type=str, required=True)
     args=parser.parse_args()
 
     # Choose experiment.
     FLAGS.update_for_experiment(args)
+    np.random.seed(args.trial_num)
+    tf.set_random_seed(args.trial_num)
 
     print("*******************************************************************")
     print("Experiment: %s" % FLAGS.experiment_name)

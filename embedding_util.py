@@ -22,9 +22,12 @@ def normalize(a):
     """
     return a/np.linalg.norm(a)
 
-def create_word_vector():
+def create_word_vector(embedding_type):
     """Returns a random Gaussian vector with DIMS dimensions."""
-    vector = embed_2d(DIMS, None)
+    if embedding_type == 'norm':
+        vector = np.random.normal(size=DIMS)
+    elif embedding_type == 'old':
+        vector = embed_2d(DIMS, None)
     return normalize(vector)
 
 """For working with embedding."""

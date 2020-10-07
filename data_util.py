@@ -58,6 +58,8 @@ def generate_batch(X, y, FLAGS, embedding):
                 FILLER_INDICES = [0, 5, 6, 13, 17, 18, 19, 20, 21, 22, 23, 24]
             elif FLAGS.experiment_name == "variablefiller_gensymbolicstates_100000_1_testunseen_AllQs":
                 FILLER_INDICES = [0, 6, 7, 14, 19, 20, 24, 25, 26, 27, 28, 29]
+            elif FLAGS.experiment_name == "variablefiller_AllQs":
+                FILLER_INDICES = [1, 12, 19, 21, 23, 27]
             else:
                 raise ValueError("Unsupported experiment name")
             DIMS = 50
@@ -71,7 +73,7 @@ def generate_batch(X, y, FLAGS, embedding):
                 num_fillers = len(FILLER_INDICES)
                 new_filler_embedding = np.empty((num_fillers, DIMS))
                 for j in range(num_fillers):
-                    new_filler_embedding[j,:] = embedding_util.create_word_vector()
+                    new_filler_embedding[j,:] = embedding_util.create_word_vector(FLAGS.embedding_type)
                 # Replace filler embedding with new random embedding.
                 filler_ix_X = np.where(np.isin(batchX[examplenum], FILLER_INDICES))
                 new_embedding_ix_X = [FILLER_INDICES.index(i) for i in batchX[examplenum,filler_ix_X][0]]
@@ -92,6 +94,8 @@ def shift_inputs(batchX, experiment_name):
         padding_index = 27
     elif experiment_name == "fixedfiller_gensymbolicstates_100000_1_testunseen_AllQs":
         padding_index = 27
+    elif experiment_name == "variablefiller_AllQs":
+        padding_index = 15
     else:
         raise ArgumentError("Unsupported experiment name.")
     batch_size = batchX.shape[0]
