@@ -32,8 +32,8 @@ import sonnet as snt
 import tensorflow as tf
 
 import sys
-sys.path.append("/home/cc27/Thesis/contextual_learning_csw/architecture_models/")
-from architecture_models.sonnet_gated_rnn import LSTM
+sys.path.append("/home/cc27/Thesis/generalized_schema_learning/architecture_models/")
+from sonnet_gated_rnn import LSTM
 
 import access
 

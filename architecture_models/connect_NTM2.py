@@ -21,7 +21,7 @@ class ntm2_model(object):
         FLAGS.memory_size = 128
         FLAGS.word_size = 20
         FLAGS.num_write_heads = 1
-        FLAGS.num_read_heads = 4
+        FLAGS.num_read_heads = 1
         FLAGS.clip_value = 20
         self.embedding = tf.placeholder(tf.float32)
         self.X = tf.placeholder(tf.float32,
