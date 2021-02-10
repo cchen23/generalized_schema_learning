@@ -11,10 +11,13 @@ import time
 
 from data_util import generate_epoch
 from architecture_models.model import fast_weights_model
-from architecture_models.connect_NTM2 import ntm2_model
-from architecture_models.connect_NTM2_large import ntm2_model as ntm2_model_large
-from architecture_models.connect_NTM2_xl import ntm2_model as ntm2_model_xl
+from architecture_models.connect_DNC import dnc_model
+#from architecture_models.connect_NTM2 import ntm2_model
+#from architecture_models.connect_NTM2_large import ntm2_model as ntm2_model_large
+#from architecture_models.connect_NTM2_xl import ntm2_model as ntm2_model_xl
 from architecture_models.custom_LSTMLN import lstmln_model
+from architecture_models.custom_LSTMLN_three_layer import lstmln_model as lstmln_model_three_layer
+from architecture_models.custom_LSTMLN_five_layer import lstmln_model as lstmln_model_five_layer
 from hard_coded_things import experiment_parameters, embedding_size
 
 base_dir = directories.base_dir
@@ -97,10 +100,18 @@ def get_clean_model(FLAGS):
     if FLAGS.model_name == 'LSTM-LN':
         model = lstmln_model(FLAGS)
     elif FLAGS.model_name == 'LSTM-LN-xl':
-        FLAGS.num_hiden_units = 1200
+        FLAGS.num_hiden_units = 2500
         model = lstmln_model(FLAGS)
+    if FLAGS.model_name == 'LSTM-LN-three-layer':
+        FLAGS.num_hiden_units = 2500
+        model = lstmln_model_three_layer(FLAGS)
+    if FLAGS.model_name == 'LSTM-LN-five-layer':
+        FLAGS.num_hiden_units = 5000
+        model = lstmln_model_five_layer(FLAGS)
     elif FLAGS.model_name == 'NTM2':
         model = ntm2_model(FLAGS)
+    elif FLAGS.model_name == 'DNC':
+        model = dnc_model(FLAGS)
     elif FLAGS.model_name == 'NTM2-large':
         model = ntm2_model_large(FLAGS)
     elif FLAGS.model_name == 'NTM2-xl':
@@ -348,7 +359,7 @@ def analyze(FLAGS, test_filename):
         Experiment inputs, correct outputs, network predictions, and network state histories.
    """
    # Load the train/test datasets
-   if FLAGS.model_name not in ["NTM2", "LSTM-LN", "LSTM-LN-xl", "RNN-LN-FW", "RNN-LN", "NTM2-xl"]:
+   if FLAGS.model_name not in ["NTM2", "LSTM-LN", "LSTM-LN-xl", "LSTM-LN-three-layer", "LSTM-LN-five-layer",  "RNN-LN-FW", "RNN-LN", "NTM2-xl", "DNC"]:
        raise ArgumentError("Analysis currently works only with RNN, LSTM, Fast Weights, and reduced NTM.")
    print("Running controller and external memory buffer analysis")
    print("Loading datasets from directory %s:" % FLAGS.data_dir)
@@ -383,10 +394,10 @@ def analyze(FLAGS, test_filename):
                    input_vectors = batch_X
                    batch_embeddings = batch_embedding
                else:
-                   if FLAGS.model_name in ["NTM2", "LSTM-LN", "LSTM-LN-xl", "NTM2-xl"]:
+                   if FLAGS.model_name in ["NTM2", "LSTM-LN", "LSTM-LN-xl", "LSTM-LN-three-layer", "NTM2-xl", "DNC"]:
                        gate_histories = np.concatenate((gate_histories, controller_history[0]), axis=0)
                    hidden_histories = np.concatenate((hidden_histories, controller_history[1]), axis=0)
-                   if FLAGS.model_name in ["NTM2", "RNN-LN-FW", "NTM2-xl"]:
+                   if FLAGS.model_name in ["NTM2", "RNN-LN-FW", "NTM2-xl", "DNC"]:
                        memory_histories = np.concatenate((memory_histories, memory_history), axis=0)
                    output_vectors = np.concatenate((output_vectors, batch_y), axis=0)
                    input_vectors = np.concatenate((input_vectors, batch_X), axis=0)
@@ -422,10 +433,10 @@ def analyze(FLAGS, test_filename):
            np.savez(f, output_vectors)
        with open(os.path.join(predictions_dir, 'hidden_histories_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
            np.savez(f, hidden_histories)
-       if FLAGS.model_name in ["NTM2", "LSTM-LN", "LSTM-LN-xl", "NTM2-xl"]:
+       if FLAGS.model_name in ["NTM2", "LSTM-LN", "LSTM-LN-xl", "LSTM-LN-three-layer", "LSTM-LN-five-layer", "NTM2-xl", "DNC"]:
            with open(os.path.join(predictions_dir, 'gate_histories_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
                np.savez(f, gate_histories)
-       if FLAGS.model_name in ["NTM2", "RNN-LN-FW", "NTM2-xl"]:
+       if FLAGS.model_name in ["NTM2", "RNN-LN-FW", "NTM2-xl", "DNC"]:
            with open(os.path.join(predictions_dir, 'memory_histories_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
                np.savez(f, memory_histories)
 
@@ -440,7 +451,7 @@ def save_ntm2_weights(FLAGS, test_filename):
         Experiment inputs, correct outputs, network predictions, and network state histories.
    """
    # Load the train/test datasets
-   if FLAGS.model_name not in ["NTM2-xl", "NTM2"]:
+   if FLAGS.model_name not in ["NTM2-xl", "NTM2", "DNC"]:
        raise ArgumentError("Analysis currently works only with RNN, LSTM, Fast Weights, and reduced NTM.")
    print("Running controller and external memory buffer analysis")
    print("Loading datasets from directory %s:" % FLAGS.data_dir)
@@ -517,7 +528,7 @@ if __name__ == '__main__':
     parser.add_argument('--exp_name', help='Name of folder containing experiment data.', type=str, required=True)
     parser.add_argument('--filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions", "variable_filler_distributions_all_randn_distribution", "variable_filler_distributions_one_distribution", "variable_filler_distributions_no_subtract", "variable_filler_distributions_noise", "variable_filler_distributions_A", "variable_filler_distributions_B", "variable_filler_distributions_5050_AB", "variable_filler_distributions_second_order_subject", "variable_filler_distributions_fixed_subject", "variable_filler_distributions_5050_AB_noise"], required=True)
     parser.add_argument('--checkpoint_filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions", "variable_filler_distributions_all_randn_distribution", "variable_filler_distributions_one_distribution", "variable_filler_distributions_no_subtract", "variable_filler_distributions_noise", "variable_filler_distributions_second_order_subject", "variable_filler_distributions_fixed_subject"])
-    parser.add_argument('--model_name', help='Name of architecture.', choices=["CONTROL", "DNC", "GRU-LN", "LSTM-LN", "LSTM-LN-xl", "NTM2", "RNN-LN", "RNN-LN-FW", "NTM2-large", "NTM2-xl"], required=True)
+    parser.add_argument('--model_name', help='Name of architecture.', choices=["CONTROL", "DNC", "GRU-LN", "LSTM-LN", "LSTM-LN-xl", "LSTM-LN-three-layer", "LSTM-LN-five-layer", "NTM2", "RNN-LN", "RNN-LN-FW", "NTM2-large", "NTM2-xl", "DNC"], required=True)
 
     parser.add_argument('--num_epochs', help='Number of epochs to train. Only used for train function.', type=int)
 
