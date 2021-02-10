@@ -102,10 +102,10 @@ def get_clean_model(FLAGS):
     elif FLAGS.model_name == 'LSTM-LN-xl':
         FLAGS.num_hiden_units = 2500
         model = lstmln_model(FLAGS)
-    if FLAGS.model_name == 'LSTM-LN-three-layer':
+    elif FLAGS.model_name == 'LSTM-LN-three-layer':
         FLAGS.num_hiden_units = 2500
         model = lstmln_model_three_layer(FLAGS)
-    if FLAGS.model_name == 'LSTM-LN-five-layer':
+    elif FLAGS.model_name == 'LSTM-LN-five-layer':
         FLAGS.num_hiden_units = 5000
         model = lstmln_model_five_layer(FLAGS)
     elif FLAGS.model_name == 'NTM2':
