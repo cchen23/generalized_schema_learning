@@ -1,4 +1,5 @@
 import os
+import re
 
 def clean_checkpoints(checkpoint_dir):
     experiment_checkpoint_dirs = os.listdir(checkpoint_dir)
@@ -30,30 +31,38 @@ def clean_checkpoints(checkpoint_dir):
 
 def clean_results(results_dir):
     experiment_results_dirs = os.listdir(results_dir)
-    for experiment_results_dir in experiment_results_dirs:
+    for experiment_results_dir in ['variablefiller_AllQs', 'fixedfiller_AllQs']: #experiment_results_dirs:
         experiment_dir = os.path.join(results_dir, experiment_results_dir)
         for filler_dir in os.listdir(experiment_dir):
             filler_dir_full = os.path.join(experiment_dir, filler_dir)
             print('*****************%s****************' % filler_dir_full)
-            filenames = os.listdir(filler_dir_full)
-            for network_name in ['RNN-LN-FW', 'NTM2-xl', 'RNN-LN_', 'LSTM-LN']:
-                max_epoch_num = 0
-                network_filenames = [filename for filename in filenames if network_name in filename]
-                for filename in network_filenames:
-                    filepath = os.path.join(filler_dir_full, filename)
-                    epoch_num = int(filename.split('epochs')[0].split('_')[-1])
-                    if epoch_num > max_epoch_num:
-                        max_epoch_num = epoch_num
-                filenames_to_remove = [filename for filename in network_filenames if str(max_epoch_num) not in filename]
-                filenames_to_keep = set(network_filenames) - set(filenames_to_remove)
-                if len(filenames_to_remove) > 0:
-                    print('removing: ', filenames_to_remove)
-                    print('keeping: ', filenames_to_keep)
-                    do_delete = raw_input('Delete these files? (y/n)')
-                    if do_delete == 'y':
-                        for filename in filenames_to_remove:
-                            os.remove(os.path.join(filler_dir_full, filename))
+            for filler_dir_2 in os.listdir(filler_dir_full):
+                filler_dir_full_2 = os.path.join(filler_dir_full, filler_dir_2)
+                filenames = os.listdir(filler_dir_full_2)
+                for network_name in ['RNN-LN-FW', 'NTM2-xl', 'RNN-LN_', 'LSTM-LN']:
+                    max_epochs_dict = {}
+                    network_filenames = [filename for filename in filenames if network_name in filename]
+                    for filename in network_filenames:
+                        filepath = os.path.join(filler_dir_full_2, filename)
+                        epoch_num = int(filename.split('epochs')[0].split('_')[-1])
+                        trial_num = int(re.match(r".*?trial?(?P<trial_num>\d+).*\.p", filename).group('trial_num'))
+                        if trial_num in max_epochs_dict:
+                            max_epochs_dict[trial_num]['filenames'].append(filepath)
+                            if epoch_num > max_epochs_dict[trial_num]['max_epochs']:
+                                max_epochs_dict[trial_num]['max_epochs'] = epoch_num
+                        else:
+                            max_epochs_dict[trial_num] = {'max_epochs': epoch_num, 'filenames': [filepath]}
+                    for trial_num in max_epochs_dict:
+                        filenames_to_remove = [filename for filename in max_epochs_dict[trial_num]['filenames'] if str(max_epochs_dict[trial_num]['max_epochs']) + 'epochs' not in filename]
+                        filenames_to_keep = set(max_epochs_dict[trial_num]['filenames']) - set(filenames_to_remove)
+                        if len(filenames_to_remove) > 0:
+                            print('removing: ', filenames_to_remove)
+                            print('keeping: ', filenames_to_keep)
+                            do_delete = raw_input('Delete these files? (y/n)')
+                            if do_delete == 'y':
+                                for filename in filenames_to_remove:
+                                    os.remove(os.path.join(filler_dir_full_2, filename))
 
 if __name__ == '__main__':
     clean_checkpoints('/home/cc27/Thesis/generalized_schema_learning/checkpoints')
-    clean_results('/home/cc27/Thesis/generalized_schema_learning/results')
+    #clean_results('/home/cc27/Thesis/generalized_schema_learning/results')
