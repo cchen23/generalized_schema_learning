@@ -70,6 +70,7 @@ elif args.function == "probe_ambiguous":
                                            "-J", model_name,
                                            "-p", "all",
                                            "-t", "1300",
+                                           "--gres", "gpu:1",
                                            "--mail-type", "FAIL,BEGIN,END",
                                            "--mail-user", "cc27@alumni.princeton.edu"
                                           ],
@@ -90,6 +91,7 @@ elif args.function == "test":
                                            "-J", model_name,
                                            "-p", "all",
                                            "-t", "180",
+                                           "--gres", "gpu:1",
                                            "--mail-type", "FAIL",
                                            "--mail-user", "cc27@alumni.princeton.edu"
                                           ],
@@ -110,6 +112,7 @@ elif args.function == "probe":
                                            "-J", model_name,
                                            "-p", "all",
                                            "-t", "180",
+                                           "--gres", "gpu:1",
                                            "--mail-type", "FAIL",
                                            "--mail-user", "cc27@alumni.princeton.edu"
                                           ],
@@ -130,6 +133,7 @@ elif args.function == "analyze":
                                        "-p", "all",
                                        "-t", "180",
                                        "--mail-type", "FAIL",
+                                       "--gres", "gpu:1",
                                        "--mail-user", "cc27@alumni.princeton.edu"
                                       ],
                                   stdin=subprocess.PIPE)
@@ -150,6 +154,7 @@ elif args.function == "weights":
                                            "-p", "all",
                                            "-t", "180",
                                            "--mail-type", "FAIL",
+                                           "--gres", "gpu:1",
                                            "--mail-user", "cc27@alumni.princeton.edu"
                                           ],
                                       stdin=subprocess.PIPE)
