@@ -1,6 +1,7 @@
 """
 NOTE: RIDGE AND PRO ADAPTED FROM KIRAN'S SHERLOCK CODE
 NOTE: Hard coded for specific sequence generated for analysis in variablefiller AllQs experiment.
+Figure 4.
 """
 import argparse
 import matplotlib
@@ -330,12 +331,13 @@ def run_decoding_trial_averaged(num_epochs, network, data_dir, save_dir, trial_n
 
 if __name__ == '__main__':
     # Experiment: Subject, AllQs, etc.
+    base_dir = '/home/cc27/Thesis/generalized_schema_learning'
     parser = argparse.ArgumentParser()
     parser.add_argument('--num-epochs', type=int, default='30000', help='Number of epochs for which the network was trained.')
     parser.add_argument('--network', type=str, help='Name of network to perform decoding on.')
     parser.add_argument('--trial-nums', type=int, help='Trial number to use for analysis.', default=10, nargs='+')
-    parser.add_argument('--data-dir', type=str, default=os.path.join('variable_filler', 'analysis'), help='Directory containing saved network states.')
-    parser.add_argument('--save-dir', type=str, default='decoding_results', help='Directory in which to save decoding results.')
+    parser.add_argument('--data-dir', type=str, default=os.path.join(base_dir, 'results/variablefiller_AllQs/variable_filler/variable_filler', 'analysis'), help='Directory containing saved network states.')
+    parser.add_argument('--save-dir', type=str, default='figures', help='Directory in which to save decoding results.')
     args = parser.parse_args()
     run_decoding_trial_averaged(num_epochs=args.num_epochs,
             network=args.network,

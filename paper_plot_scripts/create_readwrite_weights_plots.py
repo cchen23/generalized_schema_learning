@@ -1,3 +1,6 @@
+'''Read and write weights.
+Figure 5.
+'''
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -17,15 +20,16 @@ def test_filename_to_filler_name(test_filename):
     return filler_name
 
 trial_num = sys.argv[1]
-ANALYSIS_DATA_DIR = "variable_filler/weights/"
-DATA_DIR = "data/variable_filler"
-SAVE_DIR = "decoding_results"
+base_dir = '/home/cc27/Thesis/generalized_schema_learning'
+ANALYSIS_DATA_DIR = os.path.join(base_dir, 'results/variablefiller_AllQs/variable_filler/variable_filler/weights')
+DATA_DIR = os.path.join(base_dir, 'data/variablefiller_AllQs/')
+SAVE_DIR = os.path.join(base_dir, 'paper_plot_scripts', 'figures')
 TEMPLATE_READ = "read_weight_histories_DNC_30000epochs_trial{trial_num}_{test_filename}.npz"
 TEMPLATE_WRITE = "write_weight_histories_DNC_30000epochs_trial{trial_num}_{test_filename}.npz"
 FILLER_NAMES = ["DESSERTFILLER", "DRINKFILLER", "EMCEEFILLER", "FRIENDFILLER", "POETFILLER", "SUBJECTFILLER"]
 FILLER_NAMES_TOYLABELS = {k : turn_filler_name_into_y_label(k) for k in FILLER_NAMES}
 queries = ['QDessert', 'QDrink', 'QEmcee', 'QFriend', 'QPoet', 'QSubject']
-test_filenames = [f'test_{query.upper()}' for query in queries]
+test_filenames = ['test_' + query.upper() for query in queries]
 #FILLER_LABELS_TOCOLORS = {"Dessert":"#006BA4", "Drink":"#FF800E", "Emcee":"#ABABAB", "Friend":"#595959", "Poet":"#5F9ED1", "Subject":"#C85200"}
 query_colors = {"Dessert":"#1f77b4", "Drink":"#ff7f0e", "Emcee":"#2ca02c", "Friend":"#d62728", "Poet":"#9467bd", "Subject":"#8c564b"}
 num_filler_names = len(FILLER_NAMES)
@@ -80,7 +84,7 @@ axes[num_filler_names - 1].set_xlabel("External Buffer Indices")
 fig.align_ylabels()
 plt.tight_layout()
 plt.subplots_adjust(hspace=0.1)
-plt.savefig(os.path.join(SAVE_DIR, f"writeweights_histograms_{trial_num}"))
+plt.savefig(os.path.join(SAVE_DIR, "writeweights_histograms_" + trial_num))
 plt.close()
 
 fig, axes = plt.subplots(num_filler_names, 1)
@@ -99,7 +103,7 @@ axes[num_filler_names - 1].set_xlabel("External Buffer Indices")
 fig.align_ylabels()
 plt.tight_layout()
 plt.subplots_adjust(hspace=0.1)
-plt.savefig(os.path.join(SAVE_DIR, f"readweights_histograms_{trial_num}"))
+plt.savefig(os.path.join(SAVE_DIR, "readweights_histograms_" + trial_num))
 plt.close()
 
 def compute_proportions(list_A):
@@ -130,7 +134,7 @@ plot = p9.ggplot(data_df, p9.aes(x='read_words', y='write_words', fill='correlat
          p9.geom_tile() +\
         p9.labels.labs(x='Read', y='Write') +\
         p9.theme(axis_text_x=p9.element_text(rotation=90))
-plot.save(os.path.join(SAVE_DIR, f"readwrite_correlations_{trial_num}"), dpi=900)
+plot.save(os.path.join(SAVE_DIR, "readwrite_correlations_" + trial_num), dpi=900)
 
 # Make legend.
 for role, color in query_colors.items():
