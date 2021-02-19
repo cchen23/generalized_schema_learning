@@ -24,7 +24,7 @@ We test networks' ability to perform role-filler binding, the ability to return 
 *Example input*: *BEGIN Alice Say_hi Alice Bob Order_drink Alice coffee Order_dessert Bob chocolate END Alice ? QSubject*
 
 ### Usage and Re-creating Experiments
-See the [wiki](https://github.com/cchen23/generalized_schema_learning/wiki) for information about usage, re-creating specific experiments, and naming conventions.
+Please see the [wiki](https://github.com/cchen23/generalized_schema_learning/wiki) for additional information about running the experiments from our paper.
 
 ### Code
 This code is adapted from https://github.com/deepmind/dnc and https://github.com/GokuMohandas/fast-weights.
