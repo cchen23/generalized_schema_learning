@@ -159,6 +159,7 @@ class lstmln_model(object):
                 dtype=tf.float32)
 
         # LSTM.
+        print('num hidden units', FLAGS.num_hidden_units)
         self.lstm = BasicLSTMCell(FLAGS.num_hidden_units)
         self.new_state = self.lstm.zero_state(FLAGS.batch_size, tf.float32)
         with tf.variable_scope("lstmln_step") as scope:

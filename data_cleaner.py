@@ -1,115 +1,68 @@
-"""Modules to remove old checkpoints and results."""
-import directories
-import fnmatch
 import os
-import sys
+import re
 
-base_dir = directories.base_dir
-
-def get_fileepochs(file):
-    """Parse epoch number from filename.
-
-    Assumes filename convention in train.py.
-    """
-    return int(file.split('epochs')[0].split('_')[-1])
-
-def clean_checkpoints(experiment_foldername):
-    """Remove all checkpoint files except those with the most train epochs.
-
-    Assumes directory naming convention in train.py.
-
-    Args:
-        experiment_foldername: Name of directory to clean. Path from folder
-                               directly inside checkpoints/ directory through
-                               folder containing architecture folders.
-    """
-    print("Cleaning checkpoints for %s" % experiment_foldername)
-    experiment_directory = directories.base_dir + "checkpoints/" + experiment_foldername + "/"
-    print(experiment_directory)
-    walker_result = next(os.walk(experiment_directory))
-    subdirs = walker_result[1]
-    for subdir in subdirs:
-        print(subdir)
-        architecture_directory = experiment_directory + subdir + "/"
-        walker_result = next(os.walk(architecture_directory))
-        subsubdirs = walker_result[1]
-        for subsubdir in subsubdirs:
-            checkpoint_nums = set()
-            dropout_directory = architecture_directory + subsubdir + "/"
-            dropout_directory_files = next(os.walk(dropout_directory))[2]
-            # Get checkpoint nums.
-            for filename in dropout_directory_files:
-                if filename != "checkpoint" and "index" in filename:
-                    checkpoint_num = int(filename.split('.')[0].split('-')[-1])
-                    checkpoint_nums.add(checkpoint_num)
-            # Remove all except last checkpoint num.
-            savedcheckpoint_num = max(checkpoint_nums)
-            print(checkpoint_nums)
-            for filename in dropout_directory_files:
-                if str(savedcheckpoint_num) in filename or filename == "checkpoint":
-                    print("skipping %s" % filename)
-                    continue
-                file_path = dropout_directory + filename
-                print("removing %s" % (file_path))
-                os.remove(file_path)
+def clean_checkpoints(checkpoint_dir):
+    experiment_checkpoint_dirs = os.listdir(checkpoint_dir)
+    for experiment_checkpoint_dir in experiment_checkpoint_dirs:
+        experiment_dir = os.path.join(checkpoint_dir, experiment_checkpoint_dir)
+        for filler_dir in os.listdir(experiment_dir):
+            filler_dir_full = os.path.join(experiment_dir, filler_dir)
+            for network_dir in os.listdir(filler_dir_full):
+                network_dir_full = os.path.join(filler_dir_full, network_dir)
+                for trial_dir in os.listdir(network_dir_full):
+                    trial_dir_full = os.path.join(network_dir_full, trial_dir)
+                    filenames = os.listdir(trial_dir_full)
+                    max_epoch_num = 0
+                    for filename in filenames:
+                        if filename == 'checkpoint':
+                            continue
+                        epoch_num = int(filename.split('.')[0].split('-')[-1])
+                        if epoch_num > max_epoch_num:
+                            max_epoch_num = epoch_num
+                    filenames_to_remove = [filename for filename in filenames if str(max_epoch_num) not in filename and filename != 'checkpoint']
+                    if len(filenames_to_remove) > 0:
+                        print('removing: ', filenames_to_remove)
+                        print('keeping: ', set(filenames) - set(filenames_to_remove))
+                        do_delete = raw_input('Delete these files? (y/n)')
+                        if do_delete == 'y':
+                            for filename in filenames_to_remove:
+                                os.remove(os.path.join(trial_dir_full, filename))
 
 
-def clean_results(experiment_foldername):
-    """Remove all results files except those with the most train epochs.
-
-    Assumes directory creation method used in train.py.
-
-    Args:
-        experiment_foldername: Name of directory to clean. Path from folder
-                               directly inside results/ directory through
-                               folder containing architecture folders.
-    """
-    print("Cleaning results for %s" % experiment_foldername)
-    RESULTSFILE_TEMPLATES = ['%s_results_%depochs_10dropout_split.p', '%s_results_%depochs_10dropout.p']
-    MATCH_TEMPLATES = ['%s_results_*epochs_10dropout_split.p', '%s_results_*epochs_10dropout.p']
-    for MATCH_TEMPLATE, RESULTSFILE_TEMPLATE in zip(MATCH_TEMPLATES, RESULTSFILE_TEMPLATES):
-        experiment_directory = directories.base_dir + "results/" + experiment_foldername
-        print(experiment_directory)
-        maxepochs = {
-            'CONTROL': 0,
-            'DNC': 0,
-            'RNN-LN-FW': 0,
-            'GRU-LN': 0,
-            'LSTM-LN': 0,
-            'NTM2': 0,
-            'RNN-LN': 0
-        }
-        architectures = ['CONTROL', 'DNC', 'RNN-LN-FW', 'GRU-LN', 'LSTM-LN', 'NTM2', 'RNN-LN']
-        removed_files = []
-        for file in os.listdir(experiment_directory):
-            print("file: ", file)
-            if file in removed_files:
-                continue
-            for architecture in architectures:
-                if fnmatch.fnmatch(file, MATCH_TEMPLATE % architecture):
-                    fileepochs = get_fileepochs(file)
-                    if fileepochs < maxepochs[architecture]:
-                        print(file)
-                        os.remove(experiment_directory + file)
-                        removed_files.append(file)
-                    else:
-                        if maxepochs[architecture] > 0:
-                            print(RESULTSFILE_TEMPLATE % (architecture, maxepochs[architecture]))
-                            os.remove(experiment_directory + RESULTSFILE_TEMPLATE % (architecture, maxepochs[architecture]))
-                            removed_files.append(file)
-                        maxepochs[architecture] = fileepochs
-
-
+def clean_results(results_dir):
+    experiment_results_dirs = os.listdir(results_dir)
+    for experiment_results_dir in ['variablefiller_AllQs', 'fixedfiller_AllQs', 'generate_train3roles_testnewrole_withunseentestfillers_1000personspercategory_24000train_120test', 'generate_train3roles_testnewrole_withunseentestfillers_1000personspercategory_24000train_120test_shuffled']: #experiment_results_dirs:
+        experiment_dir = os.path.join(results_dir, experiment_results_dir)
+        for filler_dir in os.listdir(experiment_dir):
+            filler_dir_full = os.path.join(experiment_dir, filler_dir)
+            print('*****************%s****************' % filler_dir_full)
+            for filler_dir_2 in os.listdir(filler_dir_full):
+                filler_dir_full_2 = os.path.join(filler_dir_full, filler_dir_2)
+                filenames = os.listdir(filler_dir_full_2)
+                for network_name in ['RNN-LN-FW', 'NTM2-xl', 'RNN-LN_', 'LSTM-LN_', 'LSTM-LN-five']:
+                    max_epochs_dict = {}
+                    network_filenames = [filename for filename in filenames if network_name in filename]
+                    for filename in network_filenames:
+                        filepath = os.path.join(filler_dir_full_2, filename)
+                        epoch_num = int(filename.split('epochs')[0].split('_')[-1])
+                        trial_num = int(re.match(r".*?trial?(?P<trial_num>\d+).*\.p", filename).group('trial_num'))
+                        if trial_num in max_epochs_dict:
+                            max_epochs_dict[trial_num]['filenames'].append(filepath)
+                            if epoch_num > max_epochs_dict[trial_num]['max_epochs']:
+                                max_epochs_dict[trial_num]['max_epochs'] = epoch_num
+                        else:
+                            max_epochs_dict[trial_num] = {'max_epochs': epoch_num, 'filenames': [filepath]}
+                    for trial_num in max_epochs_dict:
+                        filenames_to_remove = [filename for filename in max_epochs_dict[trial_num]['filenames'] if str(max_epochs_dict[trial_num]['max_epochs']) + 'epochs' not in filename]
+                        filenames_to_keep = set(max_epochs_dict[trial_num]['filenames']) - set(filenames_to_remove)
+                        if len(filenames_to_remove) > 0:
+                            print('removing: ', filenames_to_remove)
+                            print('keeping: ', filenames_to_keep)
+                            do_delete = raw_input('Delete these files? (y/n)')
+                            if do_delete == 'y':
+                                for filename in filenames_to_remove:
+                                    os.remove(os.path.join(filler_dir_full_2, filename))
 
 if __name__ == '__main__':
-    clean_option = sys.argv[1]
-
-    if clean_option == "checkpoints":
-        experiment_foldernames = sys.argv[2:]
-        for experiment_foldername in experiment_foldernames:
-            clean_checkpoints(experiment_foldername)
-
-    elif clean_option == "results":
-        experiment_foldernames = sys.argv[2:]
-        for experiment_foldername in experiment_foldernames:
-            clean_results(experiment_foldername)
+    #clean_checkpoints('/home/cc27/Thesis/generalized_schema_learning/checkpoints')
+    clean_results('/home/cc27/Thesis/generalized_schema_learning/results')

@@ -220,7 +220,7 @@ class MemoryAccess(snt.RNNCore):
       tensor of shape `[batch_size, num_writes, memory_size]` indicating where
           to write to (if anywhere) for each write head.
     """
-    with tf.name_scope('write_weights', values=[inputs, memory, usage]):
+    with tf.name_scope('write_weights', values=[inputs, memory]):
       # c_t^{w, i} - The content-based weights for each write head.
       write_content_weights = self._write_content_weights_mod(
           memory, inputs['write_content_keys'],
@@ -228,7 +228,7 @@ class MemoryAccess(snt.RNNCore):
 
       # w_t^g
       interpolation_gate = tf.expand_dims(inputs['interpolation_gate_write'],1)
-      gated_weighting = interpolation_gate * content_weights + (1.0 - interpolation_gate) * prev_write_weights
+      gated_weighting = interpolation_gate * write_content_weights + (1.0 - interpolation_gate) * prev_write_weights
 
       # w_t_bar
       # shift_weighting = tf.reshape(inputs['shift_weighting_write'], #  NOTE: Reduced NTM has no shift weighting.
@@ -267,7 +267,7 @@ class MemoryAccess(snt.RNNCore):
 
       # w_t^g
       interpolation_gate = tf.expand_dims(inputs['interpolation_gate_read'],1)
-      gated_weighting = interpolation_gate * content_weights + (1.0 - interpolation_gate) * prev_write_weights
+      gated_weighting = interpolation_gate * content_weights + (1.0 - interpolation_gate) * prev_read_weights
 
       # w_t_bar
       # shift_weighting = tf.reshape(inputs['shift_weighting_read'], # NOTE: Reduced NTM has no shift weighting.

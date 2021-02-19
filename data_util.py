@@ -2,7 +2,9 @@
 import numpy as np
 import embedding_util
 
-def generate_epoch(X, y, num_epochs, FLAGS, embedding, do_shift_inputs=True):
+from hard_coded_things import experiment_parameters, embedding_size
+
+def generate_epoch(X, y, num_epochs, FLAGS, embedding, do_shift_inputs=True, noise_proportion=0.1, zero_vector_noise=False):
     """Generate a train epoch.
 
     Args:
@@ -16,9 +18,9 @@ def generate_epoch(X, y, num_epochs, FLAGS, embedding, do_shift_inputs=True):
         A generator containing num_epoch batches.
     """
     for epoch_num in range(num_epochs):
-        yield generate_batch(X, y, FLAGS, embedding, do_shift_inputs=do_shift_inputs)
+        yield generate_batch(X, y, FLAGS, embedding, do_shift_inputs=do_shift_inputs, noise_proportion=noise_proportion, zero_vector_noise=zero_vector_noise)
 
-def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True):
+def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True, noise_proportion=0.1, zero_vector_noise=False):
     """Generate a train batch.
 
     Constructs batches using one of three possible representations (specified by
@@ -55,77 +57,62 @@ def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True):
                 yield embedding[shift_inputs(X[start_index:end_index].squeeze(), FLAGS.experiment_name)], embedding[y[start_index:end_index].squeeze()], embedding
             else:
                 yield embedding[X[start_index:end_index]].squeeze(), embedding[y[start_index:end_index].squeeze()], embedding
-        elif filler_type == "variable_filler_distributions":
-            DIMS = 50
-            batchX, batchy = X[start_index:end_index].squeeze(), y[start_index:end_index].squeeze()
-            if do_shift_inputs:
-                batchX, padding_location = shift_inputs(batchX, FLAGS.experiment_name, return_padding_location=True)
-            else:
-                padding_location = np.inf
-            embeddingX, embeddingy = embedding[batchX], embedding[batchy]
-            epoch_embedding = embedding
-            if FLAGS.experiment_name == 'probe_role_statistic_recall_normalize_90':
-                FILLER_DISTRIBUTIONS = [{'distribution': 'A', 'indices': [3], 'proportion': 0.9}, 
-                        {'distribution': 'B', 'indices': [4], 'proportion': 0.9},
-                        {'distribution': 'B', 'indices': [6], 'proportion': 0.9},
-                        {'distribution': 'A', 'indices': [8], 'proportion': 0.9}]
-            elif FLAGS.experiment_name == 'probe_role_statistic_recall_normalize_100':
-                FILLER_DISTRIBUTIONS = [{'distribution': 'A', 'indices': [3], 'proportion': 1}, 
-                        {'distribution': 'B', 'indices': [4], 'proportion': 1},
-                        {'distribution': 'B', 'indices': [6], 'proportion': 1},
-                        {'distribution': 'A', 'indices': [8], 'proportion': 1}]
-            for example_num in range(batch_size):
-                num_fillers = len(FILLER_DISTRIBUTIONS)
-                new_filler_embedding = np.empty((num_fillers, DIMS))
-                for j, distribution_info in enumerate(FILLER_DISTRIBUTIONS):
-                    sample_value = np.random.rand()
-                    distribution = distribution_info['distribution']
-                    proportion = distribution_info['proportion']
-                    if (distribution == 'A' and sample_value > proportion) or (distribution == 'B' and sample_value < (proportion)):
-                        filler_distribution = 'add05odd'
-                    else:
-                        filler_distribution = 'add05even'
-                    new_filler_vector = embedding_util.create_word_vector(filler_distribution=filler_distribution)
-                    new_filler_embedding[j,:] = new_filler_vector
-                    filler_indices = distribution_info['indices']
-                    # Replace filler embedding with new random embedding.
-                    for filler_index in filler_indices:
-                        if filler_index >= padding_location:
-                            actual_filler_index = filler_index + 1
-                        else:
-                            actual_filler_index = filler_index
-                        if (embeddingy[example_num] == embeddingX[example_num, actual_filler_index]).all():
-                            embeddingy[example_num] = new_filler_vector
-                        embeddingX[example_num, actual_filler_index] = new_filler_vector
-                # Append embedding to original embedding identifying response.
-                epoch_embedding = np.concatenate((epoch_embedding, new_filler_embedding), axis=0)
-            yield embeddingX, embeddingy, epoch_embedding
-
-        elif filler_type == "variable_filler":
+        elif "variable_filler" in filler_type:
             # NOTE: Filler indices manually determined using word list saved by experiment creators.
-            if FLAGS.experiment_name == "variablefiller_gensymbolicstates_100000_1_testunseen_QSubject":
-                FILLER_INDICES = [0, 5, 6, 13, 17, 18, 19, 20, 21, 22, 23, 24]
-            elif FLAGS.experiment_name == "variablefiller_gensymbolicstates_100000_1_testunseen_AllQs":
-                FILLER_INDICES = [0, 6, 7, 14, 19, 20, 24, 25, 26, 27, 28, 29]
+            if "distributions" in filler_type:
+                filler_indices_and_distributions = experiment_parameters["filler_distributions"][FLAGS.experiment_name]
+                query_to_filler_indices = experiment_parameters["query_to_filler_index"][FLAGS.experiment_name]
+                filler_indices = list(filler_indices_and_distributions.keys())
+                filler_distributions = [filler_indices_and_distributions[filler_index] for filler_index in filler_indices]
+                filler_indices = [int(index) for index in filler_indices]
             else:
-                raise ValueError("Unsupported experiment name")
-            DIMS = 50
+                filler_indices = experiment_parameters["filler_indices"][FLAGS.experiment_name]
             batchX, batchy = X[start_index:end_index].squeeze(), y[start_index:end_index].squeeze()
             if FLAGS.function != "analyze" and do_shift_inputs: # Don't randomly shift inputs for decoding analysis.
                 batchX = shift_inputs(batchX, FLAGS.experiment_name)
             embeddingX, embeddingy = embedding[batchX], embedding[batchy]
+            padding_index = experiment_parameters['padding_indices'][FLAGS.experiment_name]
+            padding_vector = embedding[padding_index]
             epoch_embedding = embedding
             for examplenum in range(batch_size):
                 # Create new random embedding for each filler.
-                num_fillers = len(FILLER_INDICES)
-                new_filler_embedding = np.empty((num_fillers, DIMS))
-                for j in range(num_fillers):
-                    new_filler_embedding[j,:] = embedding_util.create_word_vector()
+                num_fillers = len(filler_indices)
+                new_filler_embedding = np.empty((num_fillers, embedding_size))
+                if "distributions" in filler_type:
+                    subject_distribution = None
+                    for j, filler_distribution in enumerate(filler_distributions):
+                        if "variable_filler_distributions_no_subtract" in filler_type: 
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="C")
+                        elif "variable_filler_distributions_one_distribution" in filler_type:
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=filler_distribution, dominant_distribution_proportion=1)
+                        elif "variable_filler_distributions_all_randn_distribution" in filler_type:
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="randn")
+                        elif "variable_filler_distributions_A" in filler_type:
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="A", dominant_distribution_proportion=1)
+                        elif "variable_filler_distributions_B" in filler_type:
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="B", dominant_distribution_proportion=1)
+                        elif "variable_filler_distributions_5050_AB" in filler_type:
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="B", dominant_distribution_proportion=0.5)
+                        else:
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=filler_distribution)
+                else:
+                    for j in range(num_fillers):
+                        new_filler_embedding[j,:] = embedding_util.create_word_vector()
                 # Replace filler embedding with new random embedding.
-                filler_ix_X = np.where(np.isin(batchX[examplenum], FILLER_INDICES))
-                new_embedding_ix_X = [FILLER_INDICES.index(i) for i in batchX[examplenum,filler_ix_X][0]]
+                filler_ix_X = np.where(np.isin(batchX[examplenum], filler_indices))
+                new_embedding_ix_X = [filler_indices.index(i) for i in batchX[examplenum,filler_ix_X][0]]
                 embeddingX[examplenum,filler_ix_X] = new_filler_embedding[new_embedding_ix_X]
-                new_embedding_ix_y = [FILLER_INDICES.index(batchy[examplenum])]
+                if "noise" in filler_type:
+                    if np.random.rand() < noise_proportion:
+                        print('noise trial')
+                        queried_filler_index = query_to_filler_indices[str(batchX[examplenum, -1])]
+                        queried_filler_indices = np.where(batchX[examplenum] == queried_filler_index)
+                        if zero_vector_noise:
+                            print('zero vector noise')
+                            embeddingX[examplenum, queried_filler_indices] = np.zeros(padding_vector.shape)
+                        else:
+                            embeddingX[examplenum, queried_filler_indices] = padding_vector
+                new_embedding_ix_y = [filler_indices.index(batchy[examplenum])]
                 embeddingy[examplenum] = new_filler_embedding[new_embedding_ix_y]
                 # Append embedding to original embedding identifying response.
                 epoch_embedding = np.concatenate((epoch_embedding, new_filler_embedding), axis=0)
@@ -133,20 +120,7 @@ def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True):
 
 def shift_inputs(batchX, experiment_name, return_padding_location=False):
     # NOTE: Padding indices manually determined using word list saved by experiment creators.
-    if experiment_name == "variablefiller_gensymbolicstates_100000_1_testunseen_QSubject":
-        padding_index = 15
-    elif experiment_name == "variablefiller_gensymbolicstates_100000_1_testunseen_AllQs":
-        padding_index = 16
-    elif experiment_name == "fixedfiller_gensymbolicstates_100000_1_AllQs":
-        padding_index = 27
-    elif experiment_name == "fixedfiller_gensymbolicstates_100000_1_testunseen_AllQs":
-        padding_index = 27
-    elif experiment_name in ["probe_role_statistic_recall", "probe_role_statistic_recall_normalize", "probe_role_statistic_recall_normalize_50"]:
-        padding_index = 5017
-    elif experiment_name in ["probe_role_statistic_recall_normalize_75", "probe_role_statistic_recall_normalize_90", "probe_role_statistic_recall_normalize_100"]:
-        padding_index = 23017
-    else:
-        raise Exception("Unsupported experiment name.")
+    padding_index = experiment_parameters['padding_indices'][experiment_name]
     batch_size = batchX.shape[0]
     new_X = np.zeros(batchX.shape, dtype=np.int16)
     for i in range(len(batchX)):
