@@ -90,7 +90,7 @@ elif args.function == "test":
                                            "--output=" + this_output,
                                            "-J", model_name,
                                            "-p", "all",
-                                           "-t", "180",
+                                           "-t", "1400",
                                            "--gres", "gpu:1",
                                            "--mail-type", "FAIL",
                                            "--mail-user", "cc27@alumni.princeton.edu"

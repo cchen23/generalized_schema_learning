@@ -31,7 +31,7 @@ def clean_checkpoints(checkpoint_dir):
 
 def clean_results(results_dir):
     experiment_results_dirs = os.listdir(results_dir)
-    for experiment_results_dir in ['variablefiller_AllQs', 'fixedfiller_AllQs']: #experiment_results_dirs:
+    for experiment_results_dir in ['variablefiller_AllQs', 'fixedfiller_AllQs', 'generate_train3roles_testnewrole_withunseentestfillers_1000personspercategory_24000train_120test', 'generate_train3roles_testnewrole_withunseentestfillers_1000personspercategory_24000train_120test_shuffled']: #experiment_results_dirs:
         experiment_dir = os.path.join(results_dir, experiment_results_dir)
         for filler_dir in os.listdir(experiment_dir):
             filler_dir_full = os.path.join(experiment_dir, filler_dir)
@@ -39,7 +39,7 @@ def clean_results(results_dir):
             for filler_dir_2 in os.listdir(filler_dir_full):
                 filler_dir_full_2 = os.path.join(filler_dir_full, filler_dir_2)
                 filenames = os.listdir(filler_dir_full_2)
-                for network_name in ['RNN-LN-FW', 'NTM2-xl', 'RNN-LN_', 'LSTM-LN']:
+                for network_name in ['RNN-LN-FW', 'NTM2-xl', 'RNN-LN_', 'LSTM-LN_', 'LSTM-LN-five']:
                     max_epochs_dict = {}
                     network_filenames = [filename for filename in filenames if network_name in filename]
                     for filename in network_filenames:
@@ -64,5 +64,5 @@ def clean_results(results_dir):
                                     os.remove(os.path.join(filler_dir_full_2, filename))
 
 if __name__ == '__main__':
-    clean_checkpoints('/home/cc27/Thesis/generalized_schema_learning/checkpoints')
-    #clean_results('/home/cc27/Thesis/generalized_schema_learning/results')
+    #clean_checkpoints('/home/cc27/Thesis/generalized_schema_learning/checkpoints')
+    clean_results('/home/cc27/Thesis/generalized_schema_learning/results')

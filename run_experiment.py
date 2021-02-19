@@ -310,7 +310,7 @@ def test(FLAGS, test_filename, save_logits=True, noise_proportion=0, zero_vector
         saved_logits = []
         true_logits = []
         saved_subject = []
-        for test_epoch_num, test_epoch in enumerate(generate_epoch(test_X, test_y, num_epochs=3, FLAGS=FLAGS, embedding=embedding, do_shift_inputs=False, noise_proportion=noise_proportion, zero_vector_noise=zero_vector_noise)):
+        for test_epoch_num, test_epoch in enumerate(generate_epoch(test_X, test_y, num_epochs=1, FLAGS=FLAGS, embedding=embedding, do_shift_inputs=False, noise_proportion=noise_proportion, zero_vector_noise=zero_vector_noise)):
             for test_batch_num, (batch_X, batch_y, batch_embedding) in enumerate(test_epoch):
                 print(test_batch_num)
                 loss, accuracy = model.step(sess, batch_X, batch_y, batch_embedding, FLAGS.l, FLAGS.e, run_option="forward_only")
@@ -440,7 +440,7 @@ def analyze(FLAGS, test_filename):
            with open(os.path.join(predictions_dir, 'memory_histories_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
                np.savez(f, memory_histories)
 
-def save_ntm2_weights(FLAGS, test_filename):
+def save_dnc_weights(FLAGS, test_filename):
    """Save read and write weights from NTM2 model.
    
    Args:
@@ -570,4 +570,4 @@ if __name__ == '__main__':
         analyze(FLAGS, test_filename)
     elif args.function == 'weights':
         test_filename = args.test_filename
-        save_ntm2_weights(FLAGS, test_filename)
+        save_dnc_weights(FLAGS, test_filename)

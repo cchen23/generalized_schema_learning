@@ -80,42 +80,21 @@ def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True, noise_proportio
                 new_filler_embedding = np.empty((num_fillers, embedding_size))
                 if "distributions" in filler_type:
                     subject_distribution = None
-                    if "second_order_subject" in filler_type:
-                        indices_to_fillers = {1: 'EMCEEFILLER', 12: 'SUBJECTFILLER', 19: 'DESSERTFILLER', 21: 'DRINKFILLER', 23: 'POETFILLER', 27: 'FRIENDFILLER'}
-                        subject_distribution = np.random.choice(['A', 'B'])
-                        for j, filler_index in enumerate(filler_indices):
-                            if indices_to_fillers[filler_index] == "SUBJECTFILLER":
-                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=subject_distribution, dominant_distribution_proportion=1)
-                            elif indices_to_fillers[filler_index] in ["FRIENDFILLER"]:
-                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=subject_distribution, dominant_distribution_proportion=0.9)
-                            else:
-                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="A", dominant_distribution_proportion=0.5)
-                    elif "fixed_subject" in filler_type:
-                        indices_to_fillers = {1: 'EMCEEFILLER', 12: 'SUBJECTFILLER', 19: 'DESSERTFILLER', 21: 'DRINKFILLER', 23: 'POETFILLER', 27: 'FRIENDFILLER'}
-                        subject_distribution = np.random.choice(['A_fixed', 'B_fixed'])
-                        for j, filler_index in enumerate(filler_indices):
-                            if indices_to_fillers[filler_index] == "SUBJECTFILLER":
-                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=subject_distribution, dominant_distribution_proportion=1)
-                            elif indices_to_fillers[filler_index] in ["FRIENDFILLER"]:
-                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=subject_distribution + '_filler', dominant_distribution_proportion=0.9)
-                            else:
-                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="A", dominant_distribution_proportion=0.5)
-                    else:
-                        for j, filler_distribution in enumerate(filler_distributions):
-                            if "variable_filler_distributions_no_subtract" in filler_type: 
-                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="C")
-                            elif "variable_filler_distributions_one_distribution" in filler_type:
-                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=filler_distribution, dominant_distribution_proportion=1)
-                            elif "variable_filler_distributions_all_randn_distribution" in filler_type:
-                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="randn")
-                            elif "variable_filler_distributions_A" in filler_type:
-                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="A", dominant_distribution_proportion=1)
-                            elif "variable_filler_distributions_B" in filler_type:
-                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="B", dominant_distribution_proportion=1)
-                            elif "variable_filler_distributions_5050_AB" in filler_type:
-                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="B", dominant_distribution_proportion=0.5)
-                            else:
-                                new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=filler_distribution)
+                    for j, filler_distribution in enumerate(filler_distributions):
+                        if "variable_filler_distributions_no_subtract" in filler_type: 
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="C")
+                        elif "variable_filler_distributions_one_distribution" in filler_type:
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=filler_distribution, dominant_distribution_proportion=1)
+                        elif "variable_filler_distributions_all_randn_distribution" in filler_type:
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="randn")
+                        elif "variable_filler_distributions_A" in filler_type:
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="A", dominant_distribution_proportion=1)
+                        elif "variable_filler_distributions_B" in filler_type:
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="B", dominant_distribution_proportion=1)
+                        elif "variable_filler_distributions_5050_AB" in filler_type:
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="B", dominant_distribution_proportion=0.5)
+                        else:
+                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=filler_distribution)
                 else:
                     for j in range(num_fillers):
                         new_filler_embedding[j,:] = embedding_util.create_word_vector()
