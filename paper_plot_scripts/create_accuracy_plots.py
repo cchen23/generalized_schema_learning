@@ -237,7 +237,7 @@ def accuracy_learning_curves_variable(trial_nums=[1, 2, 3]):
    plt.close()
 
 if __name__ == '__main__':
-   #accuracy_plots_fixed()
+   accuracy_plots_fixed()
    accuracy_plots_variable()
    accuracy_learning_curves_fixed()
    accuracy_learning_curves_variable()
