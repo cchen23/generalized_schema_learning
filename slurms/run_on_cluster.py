@@ -11,7 +11,7 @@ parser.add_argument('--checkpoint-filler-type')
 parser.add_argument('--model-names', nargs='+')
 parser.add_argument('--model-names-and-num-epochs',
                     nargs='+',
-                    default=['NTM2_50', 'RNN-LN-FW_1000'],
+                    default=['NTM2_50', 'RNN-LN-FW_250'],
                     #default=['RNN-LN_2500', 'LSTM-LN_1250', 'NTM2_50', 'RNN-LN-FW_1000'],
                     help='model names followed by number of training epochs (e.g. RNN-LN_2500 LSTM-LN_1250')
 parser.add_argument('--test-filenames',
@@ -55,7 +55,6 @@ if args.function == "train":
             thiscmd = cmd.format(script=script, function=args.function, experiment_name=args.experiment_name, filler_type=args.filler_type, model_name=model_name, trial_num=trial_num, num_epochs=num_epochs, batch_size=args.batch_size)
             print(thiscmd)
             print('********')
-            #print(this_output)
             sbproc.communicate(thiscmd)
 elif args.function == "probe_ambiguous":
     for test_filename in args.test_filenames:

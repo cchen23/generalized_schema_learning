@@ -2,10 +2,9 @@ import os
 
 exp_name_template = "probestatisticsretention_percentageindistribution{percentage_train_indistribution}_normalizefillerdistributionFalse"
 filler_type = "fixed_filler"
-model_name = "NTM2"
+model_names = ["NTM2", "RNN-LN-FW", "RNN-LN", "LSTM-LN"]
 
 test_filenames = ["test_QFriend_replacefriend.p", "test_QPoet_replacepoet.p", "test_QSubject_replacesubject.p", "test_QEmcee_replaceemcee.p"]
-percentage_train_indistribution_options = [0, 50, 100]
 
 for percentage_train_indistribution in percentage_train_indistribution_options:
     f = open('probe_statistics_{percentage_train_indistribution}trainindistribution.sh'.format(percentage_train_indistribution=percentage_train_indistribution), 'wb')
