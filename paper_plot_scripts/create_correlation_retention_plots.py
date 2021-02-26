@@ -156,7 +156,7 @@ def save_results(dir_name,
                     a = pickle.load(f)
                 try:
                     accuracy = sum(a['predictions'] == a['responses']) / (1.0 * len(a))
-                except:
+                except Exception:
                     print(dir_name, trial_num, test_name, network_name)
                     accuracy = 0
                 results_df = results_df.append({'trial_num': trial_num, 'test_name': test_name.lower().replace('', ''), 'accuracy': accuracy, 'network_name': network_name}, ignore_index=True)
@@ -183,10 +183,10 @@ def plot_accuracies(dir_name,
             plt.bar(x, y_mean, yerr=y_err, color=color_blue)
         query_titles = [query[:2].upper() + query[2:] for query in queries]
         plt.xticks(np.arange(1, len(queries) + 1), query_titles, fontsize=axis_fontsize)
-        #plt.xlabel('Query')
+        plt.xlabel('Query')
         plt.ylabel('Test Accuracy', fontsize=axis_fontsize)
         plt.axhline(y=chance_rate, label="Chance Rate", color='k', linestyle='--')
-        #plt.legend(loc='lower right', bbox_to_anchor=(1, 1))
+        plt.legend(loc='lower right', bbox_to_anchor=(1, 1))
 
         plt.savefig('figures/accuracies_{dir_name}_{network_name}_{split_type}'.format(dir_name=dir_name, network_name=network_name.replace("-", ""), split_type=split_type), dpi=600)
         plt.close()
@@ -195,15 +195,15 @@ def plot_accuracies(dir_name,
 if __name__ == '__main__':
     plot_bias_ttest(network_names=['DNC'], trial_nums=[1, 2, 3, 4, 5])
     plot_hists(network_names=['DNC'])
-    #plot_bias_ttest(network_names=['RNN-LN-FW'], trial_nums=[1, 2, 3, 4, 5])
-    #plot_hists(network_names=['RNN-LN-FW'])
-    #plot_bias_ttest_diffs(network_names=['DNC'], trial_nums=[1, 2, 3, 4, 5])
-    #plot_bias_ttest_diffs(network_names=['RNN-LN-FW'], trial_nums=[1, 2, 3, 4, 5])
-    #dirs = ['variable_filler_distributions_A', 'variable_filler_distributions_B', 'variable_filler_distributions_all_randn_distribution', 'variable_filler_distributions_5050_AB']
-    #for dir_name in dirs:
-    #    plot_bias_ttest_diffs(dir_name, trial_nums=[1, 2, 3, 4, 5], network_names=['DNC'])
-    #    save_results(dir_name, trial_nums=[1, 2, 3, 4, 5], network_names=['DNC'])
-    #    plot_accuracies(dir_name, network_names=['DNC'])
-    #    plot_bias_ttest_diffs(dir_name, trial_nums=[1, 2, 3, 4, 5], network_names=['RNN-LN-FW'])
-    #    save_results(dir_name, trial_nums=[1, 2, 3, 4, 5], network_names=['RNN-LN-FW'])
-    #    plot_accuracies(dir_name, network_names=['RNN-LN-FW'])
+    plot_bias_ttest(network_names=['RNN-LN-FW'], trial_nums=[1, 2, 3, 4, 5])
+    plot_hists(network_names=['RNN-LN-FW'])
+    plot_bias_ttest_diffs(network_names=['DNC'], trial_nums=[1, 2, 3, 4, 5])
+    plot_bias_ttest_diffs(network_names=['RNN-LN-FW'], trial_nums=[1, 2, 3, 4, 5])
+    dirs = ['variable_filler_distributions_A', 'variable_filler_distributions_B', 'variable_filler_distributions_all_randn_distribution', 'variable_filler_distributions_5050_AB']
+    for dir_name in dirs:
+        plot_bias_ttest_diffs(dir_name, trial_nums=[1, 2, 3, 4, 5], network_names=['DNC'])
+        save_results(dir_name, trial_nums=[1, 2, 3, 4, 5], network_names=['DNC'])
+        plot_accuracies(dir_name, network_names=['DNC'])
+        plot_bias_ttest_diffs(dir_name, trial_nums=[1, 2, 3, 4, 5], network_names=['RNN-LN-FW'])
+        save_results(dir_name, trial_nums=[1, 2, 3, 4, 5], network_names=['RNN-LN-FW'])
+        plot_accuracies(dir_name, network_names=['RNN-LN-FW'])

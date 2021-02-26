@@ -2,8 +2,6 @@
 
 NOTE: Adapted from https://github.com/GokuMohandas/fast-weights.
 """
-import collections
-import math
 import numpy as np
 import tensorflow as tf
 
@@ -14,6 +12,7 @@ import embedding_util
 sys.path.append(base_dir + "architecture_models/dnc-master")
 import dnc
 
+
 class dnc_model(object):
 
     def __init__(self, FLAGS):
@@ -21,7 +20,7 @@ class dnc_model(object):
         FLAGS.memory_size = 128
         FLAGS.word_size = 20
         FLAGS.num_write_heads = 1
-        FLAGS.num_read_heads = 1 
+        FLAGS.num_read_heads = 1
         FLAGS.clip_value = 20
 
         self.embedding = tf.placeholder(tf.float32)
@@ -29,11 +28,10 @@ class dnc_model(object):
             shape=[None, FLAGS.input_dim, FLAGS.num_classes], name='inputs_X')
         self.y = tf.placeholder(tf.float32,
             shape=[None, FLAGS.num_classes], name='targets_y')
-        self.l = tf.placeholder(tf.float32, [], # need [] for tf.scalar_mul
+        self.l = tf.placeholder(tf.float32, [],  # need [] for tf.scalar_mul
             name="learning_rate")
         self.e = tf.placeholder(tf.float32, [],
             name="decay_rate")
-        nobias = "nobias" in FLAGS.model_name
         with tf.variable_scope("DNC"):
 
             # softmax weights (proper initialization)
@@ -83,7 +81,7 @@ class dnc_model(object):
         self.logits = tf.matmul(self.new_h, self.W_softmax) + self.b_softmax
 
         # Loss
-        self.loss = tf.reduce_mean(tf.losses.mean_squared_error(labels=self.y, predictions=self.logits)) # If embedding instead of one-hot, don't want softmax (want actual values at each index, not just a classifier).
+        self.loss = tf.reduce_mean(tf.losses.mean_squared_error(labels=self.y, predictions=self.logits))  # If embedding instead of one-hot, don't want softmax (want actual values at each index, not just a classifier).
 
         # Optimization
         self.lr = tf.Variable(0.0, trainable=False)
@@ -117,12 +115,12 @@ class dnc_model(object):
             If backprop: The loss, accuracy, gradient norm, and an Optimizer that applies the gradient.
             If forward_only: The loss and accuracy.
         """
-        input_feed = {self.X: batch_X, self.y: batch_y, self.embedding: batch_embedding, self.l:l, self.e:e}
+        input_feed = {self.X: batch_X, self.y: batch_y, self.embedding: batch_embedding, self.l: l, self.e: e}
 
-        if run_option == "backprop": # training
+        if run_option == "backprop":  # training
             output_feed = [self.loss, self.accuracy, self.norm,
             self.update]
-        elif run_option == "forward_only": # testing
+        elif run_option == "forward_only":  # testing
             output_feed = [self.loss, self.accuracy]
         elif run_option == "analyze":
             output_feed = [self.loss, self.accuracy, (self.gate_history, self.hidden_history), self.memory_history]

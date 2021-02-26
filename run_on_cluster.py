@@ -2,21 +2,17 @@ import argparse
 import subprocess
 import time
 
-# Info: https://slurm.schedmd.com/sbatch.html
 parser = argparse.ArgumentParser()
 parser.add_argument('--function', default='train')
 parser.add_argument('--experiment-name')
-parser.add_argument('--filler-type', default='fixed_filler')
+parser.add_argument('--filler-type')
 parser.add_argument('--checkpoint-filler-type')
 parser.add_argument('--model-names', nargs='+')
 parser.add_argument('--model-names-and-num-epochs',
                     nargs='+',
-                    default=['NTM2_50', 'RNN-LN-FW_250'],
-                    #default=['RNN-LN_2500', 'LSTM-LN_1250', 'NTM2_50', 'RNN-LN-FW_1000'],
                     help='model names followed by number of training epochs (e.g. RNN-LN_2500 LSTM-LN_1250')
 parser.add_argument('--test-filenames',
-                    nargs='+',
-                    default=['test.p', 'test_ambiguous_all.p', 'test_ambiguous_queried_role.p', 'test_flipped_distribution.p', 'test_unseen.p', 'test_unseen_flipped_distribution.p', 'test_unseen_no_addition_distribution.p'])
+                    nargs='+')
 parser.add_argument('--trial-nums',
                     nargs='+',
                     default=[trial_num for trial_num in range(25)])

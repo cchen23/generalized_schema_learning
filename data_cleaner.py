@@ -1,5 +1,7 @@
+"""Remove redundant checkpoints and results files."""
 import os
 import re
+
 
 def clean_checkpoints(checkpoint_dir):
     experiment_checkpoint_dirs = os.listdir(checkpoint_dir)
@@ -23,15 +25,14 @@ def clean_checkpoints(checkpoint_dir):
                     if len(filenames_to_remove) > 0:
                         print('removing: ', filenames_to_remove)
                         print('keeping: ', set(filenames) - set(filenames_to_remove))
-                        do_delete = raw_input('Delete these files? (y/n)')
+                        do_delete = input('Delete these files? (y/n)')
                         if do_delete == 'y':
                             for filename in filenames_to_remove:
                                 os.remove(os.path.join(trial_dir_full, filename))
 
 
 def clean_results(results_dir):
-    experiment_results_dirs = os.listdir(results_dir)
-    for experiment_results_dir in ['variablefiller_AllQs', 'fixedfiller_AllQs', 'generate_train3roles_testnewrole_withunseentestfillers_1000personspercategory_24000train_120test', 'generate_train3roles_testnewrole_withunseentestfillers_1000personspercategory_24000train_120test_shuffled']: #experiment_results_dirs:
+    for experiment_results_dir in ['variablefiller_AllQs', 'fixedfiller_AllQs', 'generate_train3roles_testnewrole_withunseentestfillers_1000personspercategory_24000train_120test', 'generate_train3roles_testnewrole_withunseentestfillers_1000personspercategory_24000train_120test_shuffled']:
         experiment_dir = os.path.join(results_dir, experiment_results_dir)
         for filler_dir in os.listdir(experiment_dir):
             filler_dir_full = os.path.join(experiment_dir, filler_dir)
@@ -58,11 +59,12 @@ def clean_results(results_dir):
                         if len(filenames_to_remove) > 0:
                             print('removing: ', filenames_to_remove)
                             print('keeping: ', filenames_to_keep)
-                            do_delete = raw_input('Delete these files? (y/n)')
+                            do_delete = input('Delete these files? (y/n)')
                             if do_delete == 'y':
                                 for filename in filenames_to_remove:
                                     os.remove(os.path.join(filler_dir_full_2, filename))
 
+
 if __name__ == '__main__':
-    #clean_checkpoints('/home/cc27/Thesis/generalized_schema_learning/checkpoints')
+    clean_checkpoints('/home/cc27/Thesis/generalized_schema_learning/checkpoints')
     clean_results('/home/cc27/Thesis/generalized_schema_learning/results')

@@ -12,9 +12,7 @@ embedding_size = 50
 # Fr experiment creation.
 fixed_train_instances = {'Person': ['Mariko', 'Pradeep', 'Sarah', 'Julian', 'Jane', 'John'],
         'Drink': ['latte', 'water', 'juice', 'milk', 'espresso', 'chocolate'],
-        'Dessert': ['mousse', 'cookie', 'candy', 'cupcake', 'cheesecake', 'pastry']
-        }
+        'Dessert': ['mousse', 'cookie', 'candy', 'cupcake', 'cheesecake', 'pastry']}
 fixed_test_instances = {'Person': ['Olivia', 'Will', 'Anna', 'Bill'],
         'Drink': ['coffee', 'tea'],
-        'Dessert': ['cake', 'sorbet']
-        }
+        'Dessert': ['cake', 'sorbet']}

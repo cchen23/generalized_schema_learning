@@ -7,10 +7,11 @@ import sys
 sys.path.append("../")
 from directories import base_dir
 
+
 def create_analysis_data(experiment_name):
     data_path = os.path.join(base_dir, "data", experiment_name)
     with open(os.path.join(data_path, "test.p"), "rb") as f:
-      data = pickle.load(f)
+        data = pickle.load(f)
 
     num_repeats = 100
     X = data[0]
@@ -24,6 +25,7 @@ def create_analysis_data(experiment_name):
 
     with open(os.path.join(data_path, "test_analyze.p"), "wb") as f:
         pickle.dump((X_selected, y_selected), f)
+
 
 if __name__ == '__main__':
     experiment_name = sys.argv[1]

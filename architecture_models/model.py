@@ -13,6 +13,7 @@ from architecture_models.custom_GRU import (
     ln,
 )
 
+
 class fast_weights_model(object):
 
     def __init__(self, FLAGS):
@@ -22,7 +23,7 @@ class fast_weights_model(object):
             shape=[None, FLAGS.input_dim, FLAGS.num_classes], name='inputs_X')
         self.y = tf.placeholder(tf.float32,
             shape=[None, FLAGS.num_classes], name='targets_y')
-        self.l = tf.placeholder(tf.float32, [], # need [] for tf.scalar_mul
+        self.l = tf.placeholder(tf.float32, [],  # need [] for tf.scalar_mul
             name="learning_rate")
         self.e = tf.placeholder(tf.float32, [],
             name="decay_rate")
@@ -35,8 +36,8 @@ class fast_weights_model(object):
             # input weights (proper initialization)
             self.W_x = tf.Variable(tf.random_uniform(
                 [FLAGS.num_classes, FLAGS.num_hidden_units],
-                -np.sqrt(2.0/FLAGS.num_classes),
-                np.sqrt(2.0/FLAGS.num_classes)),
+                -np.sqrt(2.0 / FLAGS.num_classes),
+                np.sqrt(2.0 / FLAGS.num_classes)),
                 dtype=tf.float32)
             self.b_x = tf.Variable(tf.zeros(
                 [FLAGS.num_hidden_units]),
@@ -78,8 +79,7 @@ class fast_weights_model(object):
         for t in range(0, FLAGS.input_dim):
 
             # hidden state (preliminary vector)
-            self.h = tf.nn.tanh((tf.matmul(self.X[:, t, :], self.W_x)+self.b_x) +
-                (tf.matmul(self.h, self.W_h)))
+            self.h = tf.nn.tanh((tf.matmul(self.X[:, t, :], self.W_x) + self.b_x) + (tf.matmul(self.h, self.W_h)))
 
             # Forward weight and layer normalization
             if self.model_name in ['RNN-LN-FW']:
@@ -96,13 +96,12 @@ class fast_weights_model(object):
                 # Loop for S steps
                 for _ in range(FLAGS.S):
                     self.h_s = tf.squeeze(tf.reshape(
-                        tf.matmul(self.X[:, t, :], self.W_x)+self.b_x,
+                        tf.matmul(self.X[:, t, :], self.W_x) + self.b_x,
                         tf.shape(self.h_s)) + tf.reshape(
-                        tf.matmul(self.h, self.W_h), tf.shape(self.h_s)) + \
-                        tf.matmul(self.h_s, self.A))
+                        tf.matmul(self.h, self.W_h), tf.shape(self.h_s)) + tf.matmul(self.h_s, self.A))
 
                     # Apply layernorm
-                    mu = tf.expand_dims(tf.reduce_mean(self.h_s, reduction_indices=1), 1) # each sample
+                    mu = tf.expand_dims(tf.reduce_mean(self.h_s, reduction_indices=1), 1)  # each sample
                     sigma = tf.expand_dims(tf.sqrt(tf.reduce_mean(tf.square(self.h_s - mu),
                         reduction_indices=1)), 1)
                     self.h_s = tf.div(tf.multiply(self.gain, (self.h_s - mu)), sigma + epsilon) + \
@@ -122,7 +121,7 @@ class fast_weights_model(object):
                     self.hidden_history = tf.expand_dims(self.h, axis=2)
                     self.fastweights_history = tf.expand_dims(self.A, axis=3)
 
-            elif self.model_name == 'RNN-LN': # no fast weights but still LN
+            elif self.model_name == 'RNN-LN':  # no fast weights but still LN
                 # Apply layer norm
                 with tf.variable_scope('just_ln') as scope:
                     if t > 0:
@@ -134,7 +133,7 @@ class fast_weights_model(object):
                 else:
                     self.hidden_history = tf.expand_dims(self.h, axis=2)
 
-            elif self.model_name == 'CONTROL': # no fast weights or LN
+            elif self.model_name == 'CONTROL':  # no fast weights or LN
                 if t > 0:
                     self.hidden_history = tf.concat([self.hidden_history, tf.expand_dims(self.h, axis=2)], axis=2)
                 else:
@@ -144,7 +143,7 @@ class fast_weights_model(object):
         self.logits = tf.matmul(self.h, self.W_softmax) + self.b_softmax
 
         # Loss
-        self.loss = tf.reduce_mean(tf.losses.mean_squared_error(labels=self.y, predictions=self.logits)) # If embedding instead of one-hot, don't want softmax (want actual values at each index, not just a classifier).
+        self.loss = tf.reduce_mean(tf.losses.mean_squared_error(labels=self.y, predictions=self.logits))  # If embedding instead of one-hot, don't want softmax (want actual values at each index, not just a classifier).
 
         # Optimization
         self.lr = tf.Variable(0.0, trainable=False)
@@ -179,10 +178,10 @@ class fast_weights_model(object):
             If backprop: The loss, accuracy, gradient norm, and an Optimizer that applies the gradient.
             If forward_only: The loss and accuracy.
         """
-        input_feed = {self.X: batch_X, self.y: batch_y, self.embedding: batch_embedding, self.l:l, self.e:e}
-        if run_option == "backprop": # training
+        input_feed = {self.X: batch_X, self.y: batch_y, self.embedding: batch_embedding, self.l: l, self.e: e}
+        if run_option == "backprop":  # training
             output_feed = [self.loss, self.accuracy, self.norm, self.update]
-        elif run_option == "forward_only": # testing
+        elif run_option == "forward_only":  # testing
             output_feed = [self.loss, self.accuracy]
         elif run_option == "analyze":
             if self.model_name == "RNN-LN-FW":

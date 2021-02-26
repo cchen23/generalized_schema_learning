@@ -42,8 +42,8 @@ def construct_all_state_sequences(transitions,
     next_states = transitions[previous_state]
     for state in next_states:
         state_sequences += construct_all_state_sequences(transitions=transitions,
-                start_frame=start_frame + [state],
-                end_state=end_state)
+            start_frame=start_frame + [state],
+            end_state=end_state)
     return state_sequences
 
 
@@ -77,14 +77,12 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
     query_delimiter = "?"
     query_starter = "Q"
     padding_word = "zzz"
-    distributions_dict = {
-            "DESSERT": "A",
+    distributions_dict = {"DESSERT": "A",
             "DRINK": "B",
             "EMCEE": "A",
             "FRIEND": "B",
             "POET": "A",
-            "SUBJECT": "B",
-            }
+            "SUBJECT": "B"}
     if not os.path.exists(experiment_data_path):
         os.makedirs(experiment_data_path)
 
@@ -184,7 +182,7 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
     y = y[unique_seen_indices]
 
     if 'fixedfiller' in experiment_name:
-        num_train = int(4 * len(X)/ 5)
+        num_train = int(4 * len(X) / 5)
         train_indices = np.random.choice(len(X), num_train, replace=False)
         test_indices = np.array([idx for idx in range(len(X)) if idx not in train_indices])
         train_X = X[train_indices, :, :]
@@ -198,7 +196,6 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
         test_X, test_y = X, y
         test_unseen_X, test_unseen_y = X, y
 
-    
     # Save data into pickle files.
     if not os.path.exists(experiment_data_path):
         os.makedirs(experiment_data_path)
@@ -225,7 +222,6 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
         filler_distributions_dict = {wordslist.index(dummy_instances[role][0]): distributions_dict[role] for role in role_types.keys()}
         experiment_parameters['filler_distributions'][experiment_name] = filler_distributions_dict
 
-
     with open('../experiment_parameters.json', 'w') as f:
         json.dump(experiment_parameters, f)
     embedding = []
@@ -240,6 +236,7 @@ def write_csw_experiment(experiment_name, num_examples_per_frame, num_unseen_exa
 
     with open(os.path.join(experiment_data_path, "embedding.p"), 'wb') as f:
         pickle.dump(embedding, f)
+
 
 if __name__ == '__main__':
     # Example use: python experiment_writer_rolefillerbinding.py --exp_name=poetrygeneralization_variablefiller_gensymbolicstates_100000_1 --gen_type=TESTONLY --poss_qs=Subject,Poet

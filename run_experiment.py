@@ -12,9 +12,6 @@ import time
 from data_util import generate_epoch
 from architecture_models.model import fast_weights_model
 from architecture_models.connect_DNC import dnc_model
-#from architecture_models.connect_NTM2 import ntm2_model
-#from architecture_models.connect_NTM2_large import ntm2_model as ntm2_model_large
-#from architecture_models.connect_NTM2_xl import ntm2_model as ntm2_model_xl
 from architecture_models.custom_LSTMLN import lstmln_model
 from architecture_models.custom_LSTMLN_three_layer import lstmln_model as lstmln_model_three_layer
 from architecture_models.custom_LSTMLN_five_layer import lstmln_model as lstmln_model_five_layer
@@ -50,8 +47,8 @@ class parameters():
         self.experiment_name = args.exp_name
         self.model_name = args.model_name
         self.function = args.function
-        self.input_dim = experiment_parameters['input_dims'][self.experiment_name] # Length of input sequence, hard-coded in experiment_parameters.py.
-        self.num_classes = embedding_size # Num classes is vector dimension, since this is the size of vectors outputted by the networks.
+        self.input_dim = experiment_parameters['input_dims'][self.experiment_name]  # Length of input sequence, hard-coded in experiment_parameters.py.
+        self.num_classes = embedding_size  # Num classes is vector dimension, since this is the size of vectors outputted by the networks.
         self.batch_size = args.batch_size
         self.data_dir = os.path.join(self.data_dir, self.experiment_name)
         if not args.checkpoint_filler_type:
@@ -108,14 +105,8 @@ def get_clean_model(FLAGS):
     elif FLAGS.model_name == 'LSTM-LN-five-layer':
         FLAGS.num_hiden_units = 5000
         model = lstmln_model_five_layer(FLAGS)
-    elif FLAGS.model_name == 'NTM2':
-        model = ntm2_model(FLAGS)
     elif FLAGS.model_name == 'DNC':
         model = dnc_model(FLAGS)
-    elif FLAGS.model_name == 'NTM2-large':
-        model = ntm2_model_large(FLAGS)
-    elif FLAGS.model_name == 'NTM2-xl':
-        model = ntm2_model_xl(FLAGS)
     elif FLAGS.model_name in ['RNN-LN', 'RNN-LN-FW']:
         model = fast_weights_model(FLAGS)
     else:
@@ -127,9 +118,7 @@ def create_model(sess, FLAGS):
     """Creates model.
 
     If the architecture has been previously trained on this experiment, retrieves
-    previously trained model. NTM2 refers to a reduced NTM; this model differs
-    from a standard NTM in that it does not contain shift weights (i.e. it does
-    not contain links between consecutive memory slots).
+    previously trained model.
 
     Args:
         sess: Current tensorflow session.
@@ -221,17 +210,19 @@ def train(FLAGS):
                     previous_results_split = pickle.load(previous_results_file_split)
                     test_epoch_accuracies_split, test_epoch_losses_split = previous_results_split['accuracies'], previous_results_split['losses']
         else:
-                train_epoch_loss = []; test_epoch_loss = []
-                train_epoch_accuracy = []; test_epoch_accuracy = []
-                train_epoch_gradient_norm = []
-                if 'AllQs' in FLAGS.experiment_name:
-                    test_epoch_accuracies_split = {test_name: [] for test_name in split_test_names}
-                    test_epoch_losses_split = {test_name: [] for test_name in split_test_names} 
+            train_epoch_loss = []
+            test_epoch_loss = []
+            train_epoch_accuracy = []
+            test_epoch_accuracy = []
+            train_epoch_gradient_norm = []
+            if 'AllQs' in FLAGS.experiment_name:
+                test_epoch_accuracies_split = {test_name: [] for test_name in split_test_names}
+                test_epoch_losses_split = {test_name: [] for test_name in split_test_names}
         for train_epoch_num, train_epoch in enumerate(generate_epoch(train_X, train_y, FLAGS.num_epochs, FLAGS, embedding)):
             test_start_time = time.time()
-            train_epoch_num += 1 # Use 1-based indexing for train epoch numbering.
+            train_epoch_num += 1  # Use 1-based indexing for train epoch numbering.
             print("EPOCH:", train_epoch_num + previous_trained_epochs)
-            sess.run(tf.assign(model.lr, FLAGS.learning_rate)) # Assign the learning rate.
+            sess.run(tf.assign(model.lr, FLAGS.learning_rate))  # Assign the learning rate.
 
             # Train.
             train_batch_loss = []
@@ -245,7 +236,7 @@ def train(FLAGS):
             train_epoch_loss.append(np.mean(train_batch_loss))
             train_epoch_accuracy.append(np.mean(train_batch_accuracy))
             train_epoch_gradient_norm.append(np.mean(train_batch_gradient_norm))
-            print ('Epoch: [%i/%i] time: %.4f, loss: %.7f,'
+            print('Epoch: [%i/%i] time: %.4f, loss: %.7f,'
                     ' acc: %.7f, norm: %.7f' % (train_epoch_num, FLAGS.num_epochs,
                         time.time() - start_time, train_epoch_loss[-1],
                         train_epoch_accuracy[-1], train_epoch_gradient_norm[-1]))
@@ -261,7 +252,7 @@ def train(FLAGS):
                     mean_test_batch_accuracy, mean_test_batch_loss = get_meantestinfo(sess, split_test_X[test_name], split_test_y[test_name], FLAGS, model, embedding)
                     test_epoch_accuracies_split[test_name].append(mean_test_batch_accuracy)
                     test_epoch_losses_split[test_name].append(mean_test_batch_loss)
-            print ('Epoch: [%i/%i] time: %.4f, test loss: %.7f,'
+            print('Epoch: [%i/%i] time: %.4f, test loss: %.7f,'
                     ' test acc: %.7f' % (train_epoch_num, FLAGS.num_epochs,
                         time.time() - test_start_time, test_epoch_loss[-1],
                         test_epoch_accuracy[-1]))
@@ -277,7 +268,8 @@ def train(FLAGS):
                     pickle.dump([train_epoch_accuracy, test_epoch_accuracy, train_epoch_loss, test_epoch_loss, train_epoch_gradient_norm], f)
                 if 'AllQs' in FLAGS.experiment_name:
                     with open(os.path.join(FLAGS.results_dir, '%s_results_%depochs_trial%d_split.p' % (FLAGS.model_name, train_epoch_num + previous_trained_epochs, FLAGS.trial_num)), 'wb') as f:
-                        pickle.dump({'accuracies':test_epoch_accuracies_split, 'losses':test_epoch_losses_split}, f)
+                        pickle.dump({'accuracies': test_epoch_accuracies_split, 'losses': test_epoch_losses_split}, f)
+
 
 def test(FLAGS, test_filename, save_logits=True, noise_proportion=0, zero_vector_noise=False):
     """Perform error analysis on test set.
@@ -298,7 +290,6 @@ def test(FLAGS, test_filename, save_logits=True, noise_proportion=0, zero_vector
     with tf.Session() as sess:
         # Load the model.
         model, previous_trained_epochs = create_model(sess, FLAGS)
-        start_time = time.time()
 
         # Test.
         test_start_time = time.time()
@@ -316,7 +307,7 @@ def test(FLAGS, test_filename, save_logits=True, noise_proportion=0, zero_vector
                 loss, accuracy = model.step(sess, batch_X, batch_y, batch_embedding, FLAGS.l, FLAGS.e, run_option="forward_only")
                 test_batch_loss.append(loss)
                 test_batch_accuracy.append(accuracy)
-                saved_subject.append(batch_X[:,1,:])
+                saved_subject.append(batch_X[:, 1, :])
                 logits = model.logits.eval(feed_dict={model.X: batch_X, model.embedding: batch_embedding, model.l: FLAGS.l, model.e: FLAGS.e})
                 for i in range(FLAGS.batch_size):
                     test_input = [embedding_util.get_corpus_index(vector, batch_embedding) for vector in batch_X[i]]
@@ -330,14 +321,12 @@ def test(FLAGS, test_filename, save_logits=True, noise_proportion=0, zero_vector
                         true_logits.append(np.expand_dims(batch_y[i], axis=0))
                 print('test batch accuracy %0.2f' % np.mean(test_batch_accuracy))
         print('Test set name %s' % str(test_filename))
-        print ('Test time: %.4f, test loss: %.7f,'
+        print('Test time: %.4f, test loss: %.7f,'
             ' test acc: %.7f' % (time.time() - test_start_time, np.mean(test_batch_loss),
             np.mean(test_batch_accuracy)))
-        analysis_results = pd.DataFrame(
-                        {'inputs':inputs,
-                        'predictions':predictions,
-                        'responses':responses
-                        })
+        analysis_results = pd.DataFrame({'inputs': inputs,
+                        'predictions': predictions,
+                        'responses': responses})
         predictions_dir = os.path.join(FLAGS.results_dir, 'predictions')
         if not os.path.exists(predictions_dir):
             os.makedirs(predictions_dir)
@@ -348,19 +337,19 @@ def test(FLAGS, test_filename, save_logits=True, noise_proportion=0, zero_vector
 
 
 def analyze(FLAGS, test_filename):
-   """Perform analysis on specified test set. Used for decoding experiments.
+    """Perform analysis on specified test set. Used for decoding experiments.
 
-   NOTE: Currently works for select models: NTM2, RNN-LN-FW, LSTM-LN, LSTM-LN-xl.
-   Args:
-       FLAGS: Parameters object for the experiment.
-       test_filename: Name of file containing desired test set.
+    NOTE: Currently works for select models: DNC, RNN-LN-FW, LSTM-LN, LSTM-LN-xl.
+    Args:
+        FLAGS: Parameters object for the experiment.
+        test_filename: Name of file containing desired test set.
 
    Saves:
         Experiment inputs, correct outputs, network predictions, and network state histories.
    """
    # Load the train/test datasets
-   if FLAGS.model_name not in ["NTM2", "LSTM-LN", "LSTM-LN-xl", "LSTM-LN-three-layer", "LSTM-LN-five-layer",  "RNN-LN-FW", "RNN-LN", "NTM2-xl", "DNC"]:
-       raise ArgumentError("Analysis currently works only with RNN, LSTM, Fast Weights, and reduced NTM.")
+   if FLAGS.model_name not in ["LSTM-LN", "LSTM-LN-xl", "LSTM-LN-three-layer", "LSTM-LN-five-layer",  "RNN-LN-FW", "RNN-LN", "DNC"]:
+       raise ArgumentError("Analysis currently works only with RNN, LSTM, Fast Weights, and DNC.")
    print("Running controller and external memory buffer analysis")
    print("Loading datasets from directory %s:" % FLAGS.data_dir)
    test_X, test_y = load_data(os.path.join(FLAGS.data_dir, test_filename))
@@ -394,10 +383,10 @@ def analyze(FLAGS, test_filename):
                    input_vectors = batch_X
                    batch_embeddings = batch_embedding
                else:
-                   if FLAGS.model_name in ["NTM2", "LSTM-LN", "LSTM-LN-xl", "LSTM-LN-three-layer", "NTM2-xl", "DNC"]:
+                   if FLAGS.model_name in ["LSTM-LN", "LSTM-LN-xl", "LSTM-LN-three-layer", "DNC"]:
                        gate_histories = np.concatenate((gate_histories, controller_history[0]), axis=0)
                    hidden_histories = np.concatenate((hidden_histories, controller_history[1]), axis=0)
-                   if FLAGS.model_name in ["NTM2", "RNN-LN-FW", "NTM2-xl", "DNC"]:
+                   if FLAGS.model_name in ["RNN-LN-FW", "DNC"]:
                        memory_histories = np.concatenate((memory_histories, memory_history), axis=0)
                    output_vectors = np.concatenate((output_vectors, batch_y), axis=0)
                    input_vectors = np.concatenate((input_vectors, batch_X), axis=0)
@@ -433,15 +422,15 @@ def analyze(FLAGS, test_filename):
            np.savez(f, output_vectors)
        with open(os.path.join(predictions_dir, 'hidden_histories_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
            np.savez(f, hidden_histories)
-       if FLAGS.model_name in ["NTM2", "LSTM-LN", "LSTM-LN-xl", "LSTM-LN-three-layer", "LSTM-LN-five-layer", "NTM2-xl", "DNC"]:
+       if FLAGS.model_name in ["LSTM-LN", "LSTM-LN-xl", "LSTM-LN-three-layer", "LSTM-LN-five-layer", "DNC"]:
            with open(os.path.join(predictions_dir, 'gate_histories_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
                np.savez(f, gate_histories)
-       if FLAGS.model_name in ["NTM2", "RNN-LN-FW", "NTM2-xl", "DNC"]:
+       if FLAGS.model_name in ["RNN-LN-FW", "DNC"]:
            with open(os.path.join(predictions_dir, 'memory_histories_%s_%depochs_trial%d_%s' % (FLAGS.model_name, previous_trained_epochs, FLAGS.trial_num, test_filename.replace(".p",".npz"))), 'wb') as f:
                np.savez(f, memory_histories)
 
 def save_dnc_weights(FLAGS, test_filename):
-   """Save read and write weights from NTM2 model.
+   """Save read and write weights from DNC model.
    
    Args:
        FLAGS: Parameters object for the experiment.
@@ -451,8 +440,8 @@ def save_dnc_weights(FLAGS, test_filename):
         Experiment inputs, correct outputs, network predictions, and network state histories.
    """
    # Load the train/test datasets
-   if FLAGS.model_name not in ["NTM2-xl", "NTM2", "DNC"]:
-       raise ArgumentError("Analysis currently works only with RNN, LSTM, Fast Weights, and reduced NTM.")
+   if FLAGS.model_name not in ["DNC"]:
+       raise ArgumentError("Analysis currently works only with RNN, LSTM, Fast Weights, and DNC.")
    print("Running controller and external memory buffer analysis")
    print("Loading datasets from directory %s:" % FLAGS.data_dir)
    test_X, test_y = load_data(os.path.join(FLAGS.data_dir, test_filename))
@@ -528,7 +517,7 @@ if __name__ == '__main__':
     parser.add_argument('--exp_name', help='Name of folder containing experiment data.', type=str, required=True)
     parser.add_argument('--filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions", "variable_filler_distributions_all_randn_distribution", "variable_filler_distributions_one_distribution", "variable_filler_distributions_no_subtract", "variable_filler_distributions_noise", "variable_filler_distributions_A", "variable_filler_distributions_B", "variable_filler_distributions_5050_AB", "variable_filler_distributions_second_order_subject", "variable_filler_distributions_fixed_subject", "variable_filler_distributions_5050_AB_noise"], required=True)
     parser.add_argument('--checkpoint_filler_type', help='Filler representation method', choices=["fixed_filler", "variable_filler", "variable_filler_distributions", "variable_filler_distributions_all_randn_distribution", "variable_filler_distributions_one_distribution", "variable_filler_distributions_no_subtract", "variable_filler_distributions_noise", "variable_filler_distributions_second_order_subject", "variable_filler_distributions_fixed_subject"])
-    parser.add_argument('--model_name', help='Name of architecture.', choices=["CONTROL", "DNC", "GRU-LN", "LSTM-LN", "LSTM-LN-xl", "LSTM-LN-three-layer", "LSTM-LN-five-layer", "NTM2", "RNN-LN", "RNN-LN-FW", "NTM2-large", "NTM2-xl", "DNC"], required=True)
+    parser.add_argument('--model_name', help='Name of architecture.', choices=["CONTROL", "DNC", "GRU-LN", "LSTM-LN", "LSTM-LN-xl", "LSTM-LN-three-layer", "LSTM-LN-five-layer", "RNN-LN", "RNN-LN-FW", "DNC"], required=True)
 
     parser.add_argument('--num_epochs', help='Number of epochs to train. Only used for train function.', type=int)
 

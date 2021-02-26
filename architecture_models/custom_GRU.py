@@ -2,8 +2,6 @@
 
 NOTE: Adapted from https://github.com/GokuMohandas/fast-weights.
 """
-import collections
-import math
 import numpy as np
 import sys
 import tensorflow as tf
@@ -11,19 +9,8 @@ import tensorflow as tf
 sys.path.append("../")
 import embedding_util
 
-from tensorflow.python.framework import (
-    ops,
-    tensor_shape,
-)
-
 from tensorflow.python.ops import (
     array_ops,
-    clip_ops,
-    embedding_ops,
-    init_ops,
-    math_ops,
-    nn_ops,
-    partitioned_variables,
     variable_scope as vs,
 )
 
@@ -36,11 +23,9 @@ from tensorflow.python.platform import (
     tf_logging as logging,
 )
 
-from tensorflow.python.util import (
-    nest,
-)
 
 from architecture_models.core_rnn_cell_impl import _linear
+
 
 # LN funcition
 def ln(inputs, epsilon=1e-5, scope=None):
@@ -63,6 +48,7 @@ def ln(inputs, epsilon=1e-5, scope=None):
 
     return LN
 
+
 # Modified from:
 # https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/rnn_cell.py
 class GRUCell(tf.contrib.rnn.RNNCell):
@@ -70,7 +56,7 @@ class GRUCell(tf.contrib.rnn.RNNCell):
 
     def __init__(self, num_units, input_size=None, activation=tanh, keep_prob=None):
         if input_size is not None:
-          logging.warn("%s: The input_size parameter is deprecated.", self)
+            logging.warn("%s: The input_size parameter is deprecated.", self)
         self._num_units = num_units
         self._activation = activation
         self._keep_prob = keep_prob
@@ -86,23 +72,23 @@ class GRUCell(tf.contrib.rnn.RNNCell):
     def __call__(self, inputs, state, scope=None):
         """Gated recurrent unit (GRU) with nunits cells."""
         with vs.variable_scope(scope or type(self).__name__):  # "GRUCell"
-          with vs.variable_scope("Gates"):  # Reset gate and update gate.
-            # We start with bias of 1.0 to not reset and not update.
-            r, u = array_ops.split(_linear([inputs, state],
-                           2 * self._num_units, True, 1.0), 2, axis=1)
+            with vs.variable_scope("Gates"):  # Reset gate and update gate.
+                # We start with bias of 1.0 to not reset and not update.
+                r, u = array_ops.split(_linear([inputs, state],
+                               2 * self._num_units, True, 1.0), 2, axis=1)
 
-            # Apply Layer Normalization to the two gates
-            r = ln(r, scope = 'r/')
-            u = ln(r, scope = 'u/')
+                # Apply Layer Normalization to the two gates
+                r = ln(r, scope = 'r/')
+                u = ln(r, scope = 'u/')
 
-            r, u = sigmoid(r), sigmoid(u)
-          with vs.variable_scope("Candidate"):
-            if self._keep_prob == 1:
-              c = self._activation(_linear([inputs, r * state],
-                                         self._num_units, True))
-            else:
-              c = tf.nn.dropout(self._activation(_linear([inputs, r * state],
-                                         self._num_units, True)), keep_prob=self._keep_prob)
+                r, u = sigmoid(r), sigmoid(u)
+            with vs.variable_scope("Candidate"):
+                if self._keep_prob == 1:
+                  c = self._activation(_linear([inputs, r * state],
+                                             self._num_units, True))
+                else:
+                  c = tf.nn.dropout(self._activation(_linear([inputs, r * state],
+                                             self._num_units, True)), keep_prob=self._keep_prob)
           new_h = u * state + (1 - u) * c
         return new_h, new_h, tf.concat([r,u], axis=0)
 

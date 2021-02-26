@@ -2,8 +2,6 @@
 
 NOTE: Adapted from https://github.com/GokuMohandas/fast-weights.
 """
-import collections
-import math
 import numpy as np
 import sys
 import tensorflow as tf
@@ -11,19 +9,8 @@ import tensorflow as tf
 sys.path.append("../")
 import embedding_util
 
-from tensorflow.python.framework import (
-    ops,
-    tensor_shape,
-)
-
 from tensorflow.python.ops import (
     array_ops,
-    clip_ops,
-    embedding_ops,
-    init_ops,
-    math_ops,
-    nn_ops,
-    partitioned_variables,
     variable_scope as vs,
 )
 
@@ -39,6 +26,7 @@ from tensorflow.python.platform import (
 from core_rnn_cell_impl import _linear
 
 from tensorflow.python.ops.rnn_cell_impl import RNNCell
+
 
 # LN funcition
 def ln(inputs, epsilon=1e-5, scope=None):
@@ -61,75 +49,75 @@ def ln(inputs, epsilon=1e-5, scope=None):
 
     return LN
 
+
 # Modified from:
 # https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/rnn_cell.py (branch r0.10 https://github.com/tensorflow/tensorflow/blob/r0.10/tensorflow/python/ops/rnn_cell.py)
 class BasicLSTMCell(RNNCell):
-  """Basic LSTM recurrent network cell.
-  The implementation is based on: http://arxiv.org/abs/1409.2329.
-  We add forget_bias (default: 1) to the biases of the forget gate in order to
-  reduce the scale of forgetting in the beginning of the training.
-  It does not allow cell clipping, a projection layer, and does not
-  use peep-hole connections: it is the basic baseline.
-  For advanced models, please use the full LSTMCell that follows.
-  """
-
-  def __init__(self, num_units, forget_bias=1.0, input_size=None,
-               state_is_tuple=False, activation=tanh):
-    """Initialize the basic LSTM cell.
-    Args:
-      num_units: int, The number of units in the LSTM cell.
-      forget_bias: float, The bias added to forget gates (see above).
-      input_size: Deprecated and unused.
-      state_is_tuple: If True, accepted and returned states are 2-tuples of
-        the `c_state` and `m_state`.  By default (False), they are concatenated
-        along the column axis.  This default behavior will soon be deprecated.
-      activation: Activation function of the inner states.
+    """Basic LSTM recurrent network cell.
+    The implementation is based on: http://arxiv.org/abs/1409.2329.
+    We add forget_bias (default: 1) to the biases of the forget gate in order to
+    reduce the scale of forgetting in the beginning of the training.
+    It does not allow cell clipping, a projection layer, and does not
+    use peep-hole connections: it is the basic baseline.
+    For advanced models, please use the full LSTMCell that follows.
     """
-    if not state_is_tuple:
-      logging.warn("%s: Using a concatenated state is slower and will soon be "
-                   "deprecated.  Use state_is_tuple=True.", self)
-    if input_size is not None:
-      logging.warn("%s: The input_size parameter is deprecated.", self)
-    self._num_units = num_units
-    self._forget_bias = forget_bias
-    self._state_is_tuple = state_is_tuple
-    self._activation = activation
 
-  @property
-  def state_size(self):
-    return (LSTMStateTuple(self._num_units, self._num_units)
-            if self._state_is_tuple else 2 * self._num_units)
+    def __init__(self, num_units, forget_bias=1.0, input_size=None,
+                 state_is_tuple=False, activation=tanh):
+        """Initialize the basic LSTM cell.
+        Args:
+            num_units: int, The number of units in the LSTM cell.
+            forget_bias: float, The bias added to forget gates (see above).
+            input_size: Deprecated and unused.
+            state_is_tuple: If True, accepted and returned states are 2-tuples of
+                the `c_state` and `m_state`.  By default (False), they are concatenated
+                along the column axis.  This default behavior will soon be deprecated.
+            activation: Activation function of the inner states.
+        """
+        if not state_is_tuple:
+            logging.warn("%s: Using a concatenated state is slower and will soon be "
+                    "deprecated.  Use state_is_tuple=True.", self)
+        if input_size is not None:
+            logging.warn("%s: The input_size parameter is deprecated.", self)
+        self._num_units = num_units
+        self._forget_bias = forget_bias
+        self._state_is_tuple = state_is_tuple
+        self._activation = activation
 
-  @property
-  def output_size(self):
-    return self._num_units
+    @property
+    def state_size(self):
+        return (LSTMStateTuple(self._num_units, self._num_units)
+                if self._state_is_tuple else 2 * self._num_units)
 
-  def __call__(self, inputs, state, scope=None):
-    """Long short-term memory cell (LSTM)."""
-    with vs.variable_scope(scope or type(self).__name__):  # "BasicLSTMCell"
-      # Parameters of gates are concatenated into one multiply for efficiency.
-      if self._state_is_tuple:
-        c, h = state
-      else:
-        c, h = array_ops.split(state, 2, axis=1)
-      concat = _linear([inputs, h], 4 * self._num_units, True)
+    @property
+    def output_size(self):
+        return self._num_units
 
-      # i = input_gate, j = new_input, f = forget_gate, o = output_gate
-      i, j, f, o = array_ops.split(concat, 4, axis=1)
+    def __call__(self, inputs, state, scope=None):
+        """Long short-term memory cell (LSTM)."""
+        with vs.variable_scope(scope or type(self).__name__):  # "BasicLSTMCell"
+            # Parameters of gates are concatenated into one multiply for efficiency.
+            if self._state_is_tuple:
+                c, h = state
+            else:
+                c, h = array_ops.split(state, 2, axis=1)
+            concat = _linear([inputs, h], 4 * self._num_units, True)
 
-      i = ln(i, scope = 'i/')
-      j = ln(j, scope = 'j/')
-      f = ln(f, scope = 'f/')
-      o = ln(o, scope = 'o/')
-      new_c = (c * sigmoid(f + self._forget_bias) + sigmoid(i) *
-               self._activation(j))
-      new_h = self._activation(new_c) * sigmoid(o)
+            # i = input_gate, j = new_input, f = forget_gate, o = output_gate
+            i, j, f, o = array_ops.split(concat, 4, axis=1)
 
-      if self._state_is_tuple:
-        new_state = LSTMStateTuple(new_c, new_h)
-      else:
-        new_state = array_ops.concat([new_c, new_h], 1)
-      return new_h, new_state, concat
+            i = ln(i, scope='i/')
+            j = ln(j, scope='j/')
+            f = ln(f, scope='f/')
+            o = ln(o, scope='o/')
+            new_c = (c * sigmoid(f + self._forget_bias) + sigmoid(i) * self._activation(j))
+            new_h = self._activation(new_c) * sigmoid(o)
+
+            if self._state_is_tuple:
+                new_state = LSTMStateTuple(new_c, new_h)
+            else:
+                new_state = array_ops.concat([new_c, new_h], 1)
+            return new_h, new_state, concat
 
 
 class lstmln_model(object):
@@ -140,7 +128,7 @@ class lstmln_model(object):
             shape=[None, FLAGS.input_dim, FLAGS.num_classes], name='inputs_X')
         self.y = tf.placeholder(tf.float32,
             shape=[None, FLAGS.num_classes], name='targets_y')
-        self.l = tf.placeholder(tf.float32, [], # need [] for tf.scalar_mul
+        self.l = tf.placeholder(tf.float32, [],  # need [] for tf.scalar_mul
             name="learning_rate")
         self.e = tf.placeholder(tf.float32, [],
             name="decay_rate")
@@ -177,7 +165,7 @@ class lstmln_model(object):
         self.logits = tf.matmul(self.new_h, self.W_softmax) + self.b_softmax
 
         # Loss
-        self.loss = tf.reduce_mean(tf.losses.mean_squared_error(labels=self.y, predictions=self.logits)) # If embedding instead of one-hot, don't want softmax (want actual values at each index, not just a classifier).
+        self.loss = tf.reduce_mean(tf.losses.mean_squared_error(labels=self.y, predictions=self.logits))  # If embedding instead of one-hot, don't want softmax (want actual values at each index, not just a classifier).
 
         # Optimization
         self.lr = tf.Variable(0.0, trainable=False)
@@ -212,12 +200,12 @@ class lstmln_model(object):
             If backprop: The loss, accuracy, gradient norm, and an Optimizer that applies the gradient.
             If forward_only: The loss and accuracy.
         """
-        input_feed = {self.X: batch_X, self.y: batch_y, self.embedding: batch_embedding, self.l:l, self.e:e}
+        input_feed = {self.X: batch_X, self.y: batch_y, self.embedding: batch_embedding, self.l: l, self.e: e}
 
-        if run_option == "backprop": # training
+        if run_option == "backprop":  # training
             output_feed = [self.loss, self.accuracy, self.norm,
             self.update]
-        elif run_option == "forward_only": # testing
+        elif run_option == "forward_only":  # testing
             output_feed = [self.loss, self.accuracy]
         elif run_option == "analyze":
             output_feed = [self.loss, self.accuracy, (self.gate_history, self.hidden_history)]

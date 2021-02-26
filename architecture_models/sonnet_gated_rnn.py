@@ -58,350 +58,350 @@ LSTMState = collections.namedtuple("LSTMState", ("hidden", "cell"))
 
 
 class LSTM(rnn_core.RNNCore):
-  """LSTM recurrent network cell with optional peepholes & layer normalization.
+    """LSTM recurrent network cell with optional peepholes & layer normalization.
 
-  The implementation is based on: http://arxiv.org/abs/1409.2329. We add
-  forget_bias (default: 1) to the biases of the forget gate in order to
-  reduce the scale of forgetting in the beginning of the training.
+    The implementation is based on: http://arxiv.org/abs/1409.2329. We add
+    forget_bias (default: 1) to the biases of the forget gate in order to
+    reduce the scale of forgetting in the beginning of the training.
 
-  #### Layer normalization
+    #### Layer normalization
 
-  This is described in https://arxiv.org/pdf/1607.06450.pdf
+    This is described in https://arxiv.org/pdf/1607.06450.pdf
 
-  #### Peep-hole connections
+    #### Peep-hole connections
 
-  Peep-hole connections may optionally be used by specifying a flag in the
-  constructor. These connections can aid increasing the precision of output
-  timing, for more details see:
+    Peep-hole connections may optionally be used by specifying a flag in the
+    constructor. These connections can aid increasing the precision of output
+    timing, for more details see:
 
-    https://research.google.com/pubs/archive/43905.pdf
+      https://research.google.com/pubs/archive/43905.pdf
 
-  #### Recurrent projections
+    #### Recurrent projections
 
-  Projection of the recurrent state, to reduce model parameters and speed up
-  computation. For more details see:
+    Projection of the recurrent state, to reduce model parameters and speed up
+    computation. For more details see:
 
-    https://arxiv.org/abs/1402.1128
+      https://arxiv.org/abs/1402.1128
 
-  Attributes:
-    state_size: Tuple of `tf.TensorShape`s indicating the size of state tensors.
-    output_size: `tf.TensorShape` indicating the size of the core output.
-    use_peepholes: Boolean indicating whether peephole connections are used.
-  """
-  # Keys that may be provided for parameter initializers.
-  W_GATES = "w_gates"  # weight for gates
-  B_GATES = "b_gates"  # bias of gates
-  W_F_DIAG = "w_f_diag"  # weight for prev_cell -> forget gate peephole
-  W_I_DIAG = "w_i_diag"  # weight for prev_cell -> input gate peephole
-  W_O_DIAG = "w_o_diag"  # weight for prev_cell -> output gate peephole
-  W_H_PROJECTION = "w_h_projection"  # weight for (opt) projection of h in state
-  POSSIBLE_INITIALIZER_KEYS = {
-      W_GATES, B_GATES, W_F_DIAG, W_I_DIAG, W_O_DIAG, W_H_PROJECTION}
-
-  def __init__(self,
-               hidden_size,
-               forget_bias=1.0,
-               initializers=None,
-               partitioners=None,
-               regularizers=None,
-               use_peepholes=False,
-               use_layer_norm=False,
-               hidden_clip_value=None,
-               projection_size=None,
-               cell_clip_value=None,
-               custom_getter=None,
-               name="lstm"):
-    """Construct LSTM.
-
-    Args:
-      hidden_size: (int) Hidden size dimensionality.
-      forget_bias: (float) Bias for the forget activation.
-      initializers: Dict containing ops to initialize the weights.
-        This dictionary may contain any of the keys returned by
-        `LSTM.get_possible_initializer_keys`.
-      partitioners: Optional dict containing partitioners to partition
-        the weights and biases. As a default, no partitioners are used. This
-        dict may contain any of the keys returned by
-        `LSTM.get_possible_initializer_keys`.
-      regularizers: Optional dict containing regularizers for the weights and
-        biases. As a default, no regularizers are used. This dict may contain
-        any of the keys returned by
-        `LSTM.get_possible_initializer_keys`.
-      use_peepholes: Boolean that indicates whether peephole connections are
-        used.
-      use_layer_norm: Boolean that indicates whether to apply layer
-        normalization.
-      hidden_clip_value: Optional number; if set, then the LSTM hidden state
-        vector is clipped by this value.
-      projection_size: Optional number; if set, then the LSTM hidden state is
-        projected to this size via a learnable projection matrix.
-      cell_clip_value: Optional number; if set, then the LSTM cell vector is
-        clipped by this value.
-      custom_getter: Callable that takes as a first argument the true getter,
-        and allows overwriting the internal get_variable method. See the
-        `tf.get_variable` documentation for more details.
-      name: Name of the module.
-
-    Raises:
-      KeyError: if `initializers` contains any keys not returned by
-        `LSTM.get_possible_initializer_keys`.
-      KeyError: if `partitioners` contains any keys not returned by
-        `LSTM.get_possible_initializer_keys`.
-      KeyError: if `regularizers` contains any keys not returned by
-        `LSTM.get_possible_initializer_keys`.
-      ValueError: if a peephole initializer is passed in the initializer list,
-        but `use_peepholes` is False.
+    Attributes:
+      state_size: Tuple of `tf.TensorShape`s indicating the size of state tensors.
+      output_size: `tf.TensorShape` indicating the size of the core output.
+      use_peepholes: Boolean indicating whether peephole connections are used.
     """
-    super(LSTM, self).__init__(custom_getter=custom_getter, name=name)
+    # Keys that may be provided for parameter initializers.
+    W_GATES = "w_gates"  # weight for gates
+    B_GATES = "b_gates"  # bias of gates
+    W_F_DIAG = "w_f_diag"  # weight for prev_cell -> forget gate peephole
+    W_I_DIAG = "w_i_diag"  # weight for prev_cell -> input gate peephole
+    W_O_DIAG = "w_o_diag"  # weight for prev_cell -> output gate peephole
+    W_H_PROJECTION = "w_h_projection"  # weight for (opt) projection of h in state
+    POSSIBLE_INITIALIZER_KEYS = {
+        W_GATES, B_GATES, W_F_DIAG, W_I_DIAG, W_O_DIAG, W_H_PROJECTION}
 
-    self._hidden_size = hidden_size
-    self._forget_bias = forget_bias
-    self._use_peepholes = use_peepholes
-    self._use_layer_norm = use_layer_norm
-    self._hidden_clip_value = hidden_clip_value
-    self._cell_clip_value = cell_clip_value
-    self._use_projection = projection_size is not None
-    self._hidden_state_size = projection_size or hidden_size
+    def __init__(self,
+                 hidden_size,
+                 forget_bias=1.0,
+                 initializers=None,
+                 partitioners=None,
+                 regularizers=None,
+                 use_peepholes=False,
+                 use_layer_norm=False,
+                 hidden_clip_value=None,
+                 projection_size=None,
+                 cell_clip_value=None,
+                 custom_getter=None,
+                 name="lstm"):
+        """Construct LSTM.
 
-    self.possible_keys = self.get_possible_initializer_keys(
-        use_peepholes=use_peepholes, use_projection=self._use_projection)
-    self._initializers = util.check_initializers(initializers,
-                                                 self.possible_keys)
-    self._partitioners = util.check_initializers(partitioners,
-                                                 self.possible_keys)
-    self._regularizers = util.check_initializers(regularizers,
-                                                 self.possible_keys)
-    if hidden_clip_value is not None and hidden_clip_value < 0:
-      raise ValueError("The value of hidden_clip_value should be nonnegative.")
-    if cell_clip_value is not None and cell_clip_value < 0:
-      raise ValueError("The value of cell_clip_value should be nonnegative.")
+        Args:
+            hidden_size: (int) Hidden size dimensionality.
+            forget_bias: (float) Bias for the forget activation.
+            initializers: Dict containing ops to initialize the weights.
+                This dictionary may contain any of the keys returned by
+              ` LSTM.get_possible_initializer_keys`.
+            partitioners: Optional dict containing partitioners to partition
+                the weights and biases. As a default, no partitioners are used. This
+                dict may contain any of the keys returned by
+                `LSTM.get_possible_initializer_keys`.
+            regularizers: Optional dict containing regularizers for the weights and
+                biases. As a default, no regularizers are used. This dict may contain
+                any of the keys returned by
+                `LSTM.get_possible_initializer_keys`.
+            use_peepholes: Boolean that indicates whether peephole connections are
+                used.
+            use_layer_norm: Boolean that indicates whether to apply layer
+                normalization.
+            hidden_clip_value: Optional number; if set, then the LSTM hidden state
+                vector is clipped by this value.
+            projection_size: Optional number; if set, then the LSTM hidden state is
+                projected to this size via a learnable projection matrix.
+            cell_clip_value: Optional number; if set, then the LSTM cell vector is
+                clipped by this value.
+            custom_getter: Callable that takes as a first argument the true getter,
+                and allows overwriting the internal get_variable method. See the
+                `tf.get_variable` documentation for more details.
+            name: Name of the module.
 
-  @classmethod
-  def get_possible_initializer_keys(cls, use_peepholes=False,
-                                    use_projection=False):
-    """Returns the keys the dictionary of variable initializers may contain.
+        Raises:
+          KeyError: if `initializers` contains any keys not returned by
+            `LSTM.get_possible_initializer_keys`.
+          KeyError: if `partitioners` contains any keys not returned by
+            `LSTM.get_possible_initializer_keys`.
+          KeyError: if `regularizers` contains any keys not returned by
+            `LSTM.get_possible_initializer_keys`.
+          ValueError: if a peephole initializer is passed in the initializer list,
+            but `use_peepholes` is False.
+        """
+        super(LSTM, self).__init__(custom_getter=custom_getter, name=name)
 
-    The set of all possible initializer keys are:
-      w_gates:  weight for gates
-      b_gates:  bias of gates
-      w_f_diag: weight for prev_cell -> forget gate peephole
-      w_i_diag: weight for prev_cell -> input gate peephole
-      w_o_diag: weight for prev_cell -> output gate peephole
+        self._hidden_size = hidden_size
+        self._forget_bias = forget_bias
+        self._use_peepholes = use_peepholes
+        self._use_layer_norm = use_layer_norm
+        self._hidden_clip_value = hidden_clip_value
+        self._cell_clip_value = cell_clip_value
+        self._use_projection = projection_size is not None
+        self._hidden_state_size = projection_size or hidden_size
 
-    Args:
-      cls:The class.
-      use_peepholes: Boolean that indicates whether peephole connections are
-        used.
-      use_projection: Boolean that indicates whether a recurrent projection
-        layer is used.
+        self.possible_keys = self.get_possible_initializer_keys(
+            use_peepholes=use_peepholes, use_projection=self._use_projection)
+        self._initializers = util.check_initializers(initializers,
+                                                     self.possible_keys)
+        self._partitioners = util.check_initializers(partitioners,
+                                                     self.possible_keys)
+        self._regularizers = util.check_initializers(regularizers,
+                                                     self.possible_keys)
+        if hidden_clip_value is not None and hidden_clip_value < 0:
+            raise ValueError("The value of hidden_clip_value should be nonnegative.")
+        if cell_clip_value is not None and cell_clip_value < 0:
+            raise ValueError("The value of cell_clip_value should be nonnegative.")
 
-    Returns:
-      Set with strings corresponding to the strings that may be passed to the
-        constructor.
-    """
+    @classmethod
+    def get_possible_initializer_keys(cls, use_peepholes=False,
+                                      use_projection=False):
+        """Returns the keys the dictionary of variable initializers may contain.
 
-    possible_keys = cls.POSSIBLE_INITIALIZER_KEYS.copy()
-    if not use_peepholes:
-      possible_keys.difference_update(
-          {cls.W_F_DIAG, cls.W_I_DIAG, cls.W_O_DIAG})
-    if not use_projection:
-      possible_keys.difference_update({cls.W_H_PROJECTION})
-    return possible_keys
+        The set of all possible initializer keys are:
+            w_gates:  weight for gates
+            b_gates:  bias of gates
+            w_f_diag: weight for prev_cell -> forget gate peephole
+            w_i_diag: weight for prev_cell -> input gate peephole
+            w_o_diag: weight for prev_cell -> output gate peephole
 
-  def _build(self, inputs, prev_state):
-    """Connects the LSTM module into the graph.
+        Args:
+            cls:The class.
+            use_peepholes: Boolean that indicates whether peephole connections are
+                used.
+            use_projection: Boolean that indicates whether a recurrent projection
+                layer is used.
 
-    If this is not the first time the module has been connected to the graph,
-    the Tensors provided as inputs and state must have the same final
-    dimension, in order for the existing variables to be the correct size for
-    their corresponding multiplications. The batch size may differ for each
-    connection.
+        Returns:
+            Set with strings corresponding to the strings that may be passed to the
+                constructor.
+        """
 
-    Args:
-      inputs: Tensor of size `[batch_size, input_size]`.
-      prev_state: Tuple (prev_hidden, prev_cell).
+        possible_keys = cls.POSSIBLE_INITIALIZER_KEYS.copy()
+        if not use_peepholes:
+            possible_keys.difference_update(
+                {cls.W_F_DIAG, cls.W_I_DIAG, cls.W_O_DIAG})
+        if not use_projection:
+            possible_keys.difference_update({cls.W_H_PROJECTION})
+        return possible_keys
 
-    Returns:
-      A tuple (output, next_state) where 'output' is a Tensor of size
-      `[batch_size, hidden_size]` and 'next_state' is a `LSTMState` namedtuple
-      (next_hidden, next_cell) where `next_hidden` and `next_cell` have size
-      `[batch_size, hidden_size]`. If `projection_size` is specified, then
-      `next_hidden` will have size `[batch_size, projection_size]`.
-    Raises:
-      ValueError: If connecting the module into the graph any time after the
-        first time, and the inferred size of the inputs does not match previous
-        invocations.
-    """
-    prev_hidden, prev_cell = prev_state
+    def _build(self, inputs, prev_state):
+        """Connects the LSTM module into the graph.
 
-    # pylint: disable=invalid-unary-operand-type
-    if self._hidden_clip_value is not None:
-      prev_hidden = tf.clip_by_value(
-          prev_hidden, -self._hidden_clip_value, self._hidden_clip_value)
-    if self._cell_clip_value is not None:
-      prev_cell = tf.clip_by_value(
-          prev_cell, -self._cell_clip_value, self._cell_clip_value)
-    # pylint: enable=invalid-unary-operand-type
+        If this is not the first time the module has been connected to the graph,
+        the Tensors provided as inputs and state must have the same final
+        dimension, in order for the existing variables to be the correct size for
+        their corresponding multiplications. The batch size may differ for each
+        connection.
 
-    self._create_gate_variables(inputs.get_shape(), inputs.dtype)
+        Args:
+            inputs: Tensor of size `[batch_size, input_size]`.
+            prev_state: Tuple (prev_hidden, prev_cell).
 
-    # pylint false positive: calling module of same file;
-    # pylint: disable=not-callable
+        Returns:
+            A tuple (output, next_state) where 'output' is a Tensor of size
+            `[batch_size, hidden_size]` and 'next_state' is a `LSTMState` namedtuple
+            (next_hidden, next_cell) where `next_hidden` and `next_cell` have size
+            `[batch_size, hidden_size]`. If `projection_size` is specified, then
+            `next_hidden` will have size `[batch_size, projection_size]`.
+        Raises:
+            ValueError: If connecting the module into the graph any time after the
+                first time, and the inferred size of the inputs does not match previous
+                invocations.
+        """
+        prev_hidden, prev_cell = prev_state
 
-    # Parameters of gates are concatenated into one multiply for efficiency.
-    inputs_and_hidden = tf.concat([inputs, prev_hidden], 1)
-    gates = tf.matmul(inputs_and_hidden, self._w_xh)
+        # pylint: disable=invalid-unary-operand-type
+        if self._hidden_clip_value is not None:
+            prev_hidden = tf.clip_by_value(
+                prev_hidden, -self._hidden_clip_value, self._hidden_clip_value)
+        if self._cell_clip_value is not None:
+            prev_cell = tf.clip_by_value(
+                prev_cell, -self._cell_clip_value, self._cell_clip_value)
+        # pylint: enable=invalid-unary-operand-type
 
-    if self._use_layer_norm:
-      gates = layer_norm.LayerNorm()(gates)
+        self._create_gate_variables(inputs.get_shape(), inputs.dtype)
 
-    gates += self._b
+        # pylint false positive: calling module of same file;
+        # pylint: disable=not-callable
 
-    # i = input_gate, j = next_input, f = forget_gate, o = output_gate
-    i, j, f, o = array_ops.split(value=gates, num_or_size_splits=4, axis=1)
+        # Parameters of gates are concatenated into one multiply for efficiency.
+        inputs_and_hidden = tf.concat([inputs, prev_hidden], 1)
+        gates = tf.matmul(inputs_and_hidden, self._w_xh)
 
-    if self._use_peepholes:  # diagonal connections
-      self._create_peephole_variables(inputs.dtype)
-      f += self._w_f_diag * prev_cell
-      i += self._w_i_diag * prev_cell
+        if self._use_layer_norm:
+            gates = layer_norm.LayerNorm()(gates)
 
-    forget_mask = tf.sigmoid(f + self._forget_bias)
-    next_cell = forget_mask * prev_cell + tf.sigmoid(i) * tf.tanh(j)
-    cell_output = next_cell
-    if self._use_peepholes:
-      cell_output += self._w_o_diag * cell_output
-    next_hidden = tf.tanh(cell_output) * tf.sigmoid(o)
+        gates += self._b
 
-    if self._use_projection:
-      next_hidden = tf.matmul(next_hidden, self._w_h_projection)
+        # i = input_gate, j = next_input, f = forget_gate, o = output_gate
+        i, j, f, o = array_ops.split(value=gates, num_or_size_splits=4, axis=1)
 
-    return next_hidden, LSTMState(hidden=next_hidden, cell=next_cell), gates
+        if self._use_peepholes:  # diagonal connections
+            self._create_peephole_variables(inputs.dtype)
+            f += self._w_f_diag * prev_cell
+            i += self._w_i_diag * prev_cell
 
-  def _create_gate_variables(self, input_shape, dtype):
-    """Initialize the variables used for the gates."""
-    if len(input_shape) != 2:
-      raise ValueError(
-          "Rank of shape must be {} not: {}".format(2, len(input_shape)))
+        forget_mask = tf.sigmoid(f + self._forget_bias)
+        next_cell = forget_mask * prev_cell + tf.sigmoid(i) * tf.tanh(j)
+        cell_output = next_cell
+        if self._use_peepholes:
+            cell_output += self._w_o_diag * cell_output
+        next_hidden = tf.tanh(cell_output) * tf.sigmoid(o)
 
-    equiv_input_size = self._hidden_state_size + input_shape.dims[1].value
-    initializer = basic.create_linear_initializer(equiv_input_size)
+        if self._use_projection:
+            next_hidden = tf.matmul(next_hidden, self._w_h_projection)
 
-    self._w_xh = tf.get_variable(
-        self.W_GATES,
-        shape=[equiv_input_size, 4 * self._hidden_size],
-        dtype=dtype,
-        initializer=self._initializers.get(self.W_GATES, initializer),
-        partitioner=self._partitioners.get(self.W_GATES),
-        regularizer=self._regularizers.get(self.W_GATES))
-    self._b = tf.get_variable(
-        self.B_GATES,
-        shape=[4 * self._hidden_size],
-        dtype=dtype,
-        initializer=self._initializers.get(self.B_GATES, initializer),
-        partitioner=self._partitioners.get(self.B_GATES),
-        regularizer=self._regularizers.get(self.B_GATES))
-    if self._use_projection:
-      w_h_initializer = basic.create_linear_initializer(self._hidden_size)
-      self._w_h_projection = tf.get_variable(
-          self.W_H_PROJECTION,
-          shape=[self._hidden_size, self._hidden_state_size],
-          dtype=dtype,
-          initializer=self._initializers.get(self.W_H_PROJECTION,
-                                             w_h_initializer),
-          partitioner=self._partitioners.get(self.W_H_PROJECTION),
-          regularizer=self._regularizers.get(self.W_H_PROJECTION))
+        return next_hidden, LSTMState(hidden=next_hidden, cell=next_cell), gates
 
-  def _create_peephole_variables(self, dtype):
-    """Initialize the variables used for the peephole connections."""
-    self._w_f_diag = tf.get_variable(
-        self.W_F_DIAG,
-        shape=[self._hidden_size],
-        dtype=dtype,
-        initializer=self._initializers.get(self.W_F_DIAG),
-        partitioner=self._partitioners.get(self.W_F_DIAG),
-        regularizer=self._regularizers.get(self.W_F_DIAG))
-    self._w_i_diag = tf.get_variable(
-        self.W_I_DIAG,
-        shape=[self._hidden_size],
-        dtype=dtype,
-        initializer=self._initializers.get(self.W_I_DIAG),
-        partitioner=self._partitioners.get(self.W_I_DIAG),
-        regularizer=self._regularizers.get(self.W_I_DIAG))
-    self._w_o_diag = tf.get_variable(
-        self.W_O_DIAG,
-        shape=[self._hidden_size],
-        dtype=dtype,
-        initializer=self._initializers.get(self.W_O_DIAG),
-        partitioner=self._partitioners.get(self.W_O_DIAG),
-        regularizer=self._regularizers.get(self.W_O_DIAG))
+    def _create_gate_variables(self, input_shape, dtype):
+        """Initialize the variables used for the gates."""
+        if len(input_shape) != 2:
+            raise ValueError(
+                "Rank of shape must be {} not: {}".format(2, len(input_shape)))
 
-  @property
-  def state_size(self):
-    """Tuple of `tf.TensorShape`s indicating the size of state tensors."""
-    return LSTMState(tf.TensorShape([self._hidden_state_size]),
-                     tf.TensorShape([self._hidden_size]))
+        equiv_input_size = self._hidden_state_size + input_shape.dims[1].value
+        initializer = basic.create_linear_initializer(equiv_input_size)
 
-  @property
-  def output_size(self):
-    """`tf.TensorShape` indicating the size of the core output."""
-    return tf.TensorShape([self._hidden_state_size])
+        self._w_xh = tf.get_variable(
+            self.W_GATES,
+            shape=[equiv_input_size, 4 * self._hidden_size],
+            dtype=dtype,
+            initializer=self._initializers.get(self.W_GATES, initializer),
+            partitioner=self._partitioners.get(self.W_GATES),
+            regularizer=self._regularizers.get(self.W_GATES))
+        self._b = tf.get_variable(
+            self.B_GATES,
+            shape=[4 * self._hidden_size],
+            dtype=dtype,
+            initializer=self._initializers.get(self.B_GATES, initializer),
+            partitioner=self._partitioners.get(self.B_GATES),
+            regularizer=self._regularizers.get(self.B_GATES))
+        if self._use_projection:
+            w_h_initializer = basic.create_linear_initializer(self._hidden_size)
+            self._w_h_projection = tf.get_variable(
+                self.W_H_PROJECTION,
+                shape=[self._hidden_size, self._hidden_state_size],
+                dtype=dtype,
+                initializer=self._initializers.get(self.W_H_PROJECTION,
+                                                 w_h_initializer),
+                partitioner=self._partitioners.get(self.W_H_PROJECTION),
+                regularizer=self._regularizers.get(self.W_H_PROJECTION))
 
-  @property
-  def use_peepholes(self):
-    """Boolean indicating whether peephole connections are used."""
-    return self._use_peepholes
+    def _create_peephole_variables(self, dtype):
+        """Initialize the variables used for the peephole connections."""
+        self._w_f_diag = tf.get_variable(
+            self.W_F_DIAG,
+            shape=[self._hidden_size],
+            dtype=dtype,
+            initializer=self._initializers.get(self.W_F_DIAG),
+            partitioner=self._partitioners.get(self.W_F_DIAG),
+            regularizer=self._regularizers.get(self.W_F_DIAG))
+        self._w_i_diag = tf.get_variable(
+            self.W_I_DIAG,
+            shape=[self._hidden_size],
+            dtype=dtype,
+            initializer=self._initializers.get(self.W_I_DIAG),
+            partitioner=self._partitioners.get(self.W_I_DIAG),
+            regularizer=self._regularizers.get(self.W_I_DIAG))
+        self._w_o_diag = tf.get_variable(
+            self.W_O_DIAG,
+            shape=[self._hidden_size],
+            dtype=dtype,
+            initializer=self._initializers.get(self.W_O_DIAG),
+            partitioner=self._partitioners.get(self.W_O_DIAG),
+            regularizer=self._regularizers.get(self.W_O_DIAG))
 
-  @property
-  def use_layer_norm(self):
-    """Boolean indicating whether layer norm is enabled."""
-    return self._use_layer_norm
+    @property
+    def state_size(self):
+        """Tuple of `tf.TensorShape`s indicating the size of state tensors."""
+        return LSTMState(tf.TensorShape([self._hidden_state_size]),
+                         tf.TensorShape([self._hidden_size]))
+
+    @property
+    def output_size(self):
+        """`tf.TensorShape` indicating the size of the core output."""
+        return tf.TensorShape([self._hidden_state_size])
+
+    @property
+    def use_peepholes(self):
+        """Boolean indicating whether peephole connections are used."""
+        return self._use_peepholes
+
+    @property
+    def use_layer_norm(self):
+        """Boolean indicating whether layer norm is enabled."""
+        return self._use_layer_norm
 
 
 class RecurrentDropoutWrapper(rnn_core.RNNCore):
-  """Wraps an RNNCore so that recurrent dropout can be applied."""
+    """Wraps an RNNCore so that recurrent dropout can be applied."""
 
-  def __init__(self, core, keep_probs):
-    """Builds a new wrapper around a given core.
+    def __init__(self, core, keep_probs):
+        """Builds a new wrapper around a given core.
 
-    Args:
-      core: the RNN core to be wrapped.
-      keep_probs: the recurrent dropout keep probabilities to apply.
-        This should have the same structure has core.init_state. No dropout is
-        applied for leafs set to None.
-    """
+        Args:
+            core: the RNN core to be wrapped.
+            keep_probs: the recurrent dropout keep probabilities to apply.
+                This should have the same structure has core.init_state. No dropout is
+                applied for leafs set to None.
+        """
 
-    super(RecurrentDropoutWrapper, self).__init__(
-        custom_getter=None, name=core.module_name + "_recdropout")
-    self._core = core
-    self._keep_probs = keep_probs
+      super(RecurrentDropoutWrapper, self).__init__(
+          custom_getter=None, name=core.module_name + "_recdropout")
+      self._core = core
+      self._keep_probs = keep_probs
 
-    # self._dropout_state_size is a list of shape for the state parts to which
-    # dropout is to be applied.
-    # self._dropout_index has the same shape as the core state. Leafs contain
-    # either None if no dropout is applied or an integer representing an index
-    # in self._dropout_state_size.
-    self._dropout_state_size = []
+      # self._dropout_state_size is a list of shape for the state parts to which
+      # dropout is to be applied.
+      # self._dropout_index has the same shape as the core state. Leafs contain
+      # either None if no dropout is applied or an integer representing an index
+      # in self._dropout_state_size.
+      self._dropout_state_size = []
 
-    def set_dropout_state_size(keep_prob, state_size):
-      if keep_prob is not None:
-        self._dropout_state_size.append(state_size)
-        return len(self._dropout_state_size) - 1
-      return None
+      def set_dropout_state_size(keep_prob, state_size):
+        if keep_prob is not None:
+          self._dropout_state_size.append(state_size)
+          return len(self._dropout_state_size) - 1
+        return None
 
-    self._dropout_indexes = tf.contrib.framework.nest.map_structure(
-        set_dropout_state_size, keep_probs, core.state_size)
+      self._dropout_indexes = tf.contrib.framework.nest.map_structure(
+          set_dropout_state_size, keep_probs, core.state_size)
 
-  def _build(self, inputs, prev_state):
-    core_state, dropout_masks = prev_state
-    output, next_core_state = self._core(inputs, core_state)
+    def _build(self, inputs, prev_state):
+      core_state, dropout_masks = prev_state
+      output, next_core_state = self._core(inputs, core_state)
 
-    # Dropout masks are generated via tf.nn.dropout so they actually include
-    # rescaling: the mask value is 1/keep_prob if no dropout is applied.
-    next_core_state = tf.contrib.framework.nest.map_structure(
-        lambda i, state: state if i is None else state * dropout_masks[i],
-        self._dropout_indexes, next_core_state)
+      # Dropout masks are generated via tf.nn.dropout so they actually include
+      # rescaling: the mask value is 1/keep_prob if no dropout is applied.
+      next_core_state = tf.contrib.framework.nest.map_structure(
+          lambda i, state: state if i is None else state * dropout_masks[i],
+          self._dropout_indexes, next_core_state)
 
-    return output, (next_core_state, dropout_masks)
+      return output, (next_core_state, dropout_masks)
 
   def initial_state(self, batch_size, dtype=tf.float32, trainable=False,
                     trainable_initializers=None, trainable_regularizers=None,

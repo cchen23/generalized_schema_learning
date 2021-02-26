@@ -3,6 +3,7 @@
 import ast
 import sys
 
+
 def get_indices(experiment_name, wordslist):
     # Get filler indices.
     if 'variablefiller' in experiment_name:
@@ -20,12 +21,13 @@ def get_indices(experiment_name, wordslist):
     print("Padding index: %d" % wordslist.index(padding_word))
 
     # Get query indices.
-    queries = ['QDessert_bought','QDrink_bought','QEmcee','QFriend','QPoet','QSubject']
+    queries = ['QDessert_bought', 'QDrink_bought', 'QEmcee', 'QFriend', 'QPoet', 'QSubject']
     for query in queries:
         if query in wordslist:
             print("%s index: %d" % (query, wordslist.index(query)))
 
     return
+
 
 if __name__ == '__main__':
     experiment_name = sys.argv[1]

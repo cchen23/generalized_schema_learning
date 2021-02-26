@@ -10,14 +10,13 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 import pickle
-import random
 import sys
 
 sys.path.append("../")
 from numpy.linalg import svd
 from sklearn.metrics.pairwise import cosine_similarity
 
-TITLE_FONTSIZE = 20 
+TITLE_FONTSIZE = 20
 X_FONTSIZE = 14
 AXIS_FONTSIZE = 16
 
@@ -65,7 +64,7 @@ def get_one_data(timestep, data_option, train_indices, test_indices, decoded_fil
         data_size = memory_size
     else:
         raise Exception("UNSUPPORTED DATA OPTION. Must be \"controller\" or \"memory\"")
-    
+
     train_size = len(train_indices)
     X_train = np.zeros([train_size, data_size])
     Y_train = np.zeros([train_size, prediction_size])
@@ -73,13 +72,10 @@ def get_one_data(timestep, data_option, train_indices, test_indices, decoded_fil
         train_index = train_indices[i]
         input_vector_index = get_input_index(decoded_filler)
         Y_train[i] = input_vectors[train_index][input_vector_index]
-        try:
-            if data_option == "controller":
-                X_train[i] = controller_histories_hiddenstate[train_index, :, timestep].flatten()
-            elif data_option == "memory":
-                X_train[i] = memory_histories[train_index, :, :, timestep].flatten()
-        except:
-            import pdb; pdb.set_trace()
+        if data_option == "controller":
+            X_train[i] = controller_histories_hiddenstate[train_index, :, timestep].flatten()
+        elif data_option == "memory":
+            X_train[i] = memory_histories[train_index, :, :, timestep].flatten()
 
     test_size = len(test_indices)
     X_test = np.zeros([test_size, data_size])
@@ -91,7 +87,7 @@ def get_one_data(timestep, data_option, train_indices, test_indices, decoded_fil
         if data_option == "controller":
             X_test[i] = controller_histories_hiddenstate[test_index, :, timestep].flatten()
         elif data_option == "memory":
-            X_test[i] = memory_histories[test_index,:,:,timestep].flatten()
+            X_test[i] = memory_histories[test_index, :, :, timestep].flatten()
     return X_train, Y_train, X_test, Y_test
 
 
@@ -109,7 +105,7 @@ def ridge_fit(ridge_param, X_train, Y_train):
     V = VT.T
     scaled_d = np.zeros(np.shape(s))
     for i in range(0, len(scaled_d)):
-        scaled_d[i] = s[i]/(s[i]*s[i] + ridge_param)
+        scaled_d[i] = s[i] / (s[i] * s[i] + ridge_param)
     # Y: n_samples x n_targets
     n_targets = np.shape(Y_train)[1]
     W = np.zeros((num_features, n_targets))
@@ -117,11 +113,12 @@ def ridge_fit(ridge_param, X_train, Y_train):
         y = Y_train[:, k]
         UTy = np.dot(U.T, y)
         UTy = np.ravel(UTy)  # NECESSARY TO HANDLE WEIRD MATRIX TYPES
-        dUTy = scaled_d*UTy
+        dUTy = scaled_d * UTy
         w_k = np.dot(V, dUTy)
         W[:, k] = w_k
     # Return n_features x n_targets
     return W
+
 
 def score_prediction(prediction, batch_embedding, Yi):
     """Computes the ranking score of a prediction (change rate 50%).
@@ -137,6 +134,7 @@ def score_prediction(prediction, batch_embedding, Yi):
     corpus_size = batch_embedding.shape[0]
     ranking = np.count_nonzero(prediction_similarities < actual_index_similarity) * 1.0 / (corpus_size)
     return ranking
+
 
 def get_scores_byword(getdata_function, option, num_timesteps, train_indices, test_indices, decoded_filler, batch_embeddings, test_info, input_vectors, output_vectors, controller_histories_hiddenstate, memory_histories):
     '''Get the prediction score at each timestep.'''
@@ -167,9 +165,10 @@ def get_scores_byword(getdata_function, option, num_timesteps, train_indices, te
             allscores[timestep, i] = ranking_score
     return allscores, W_ridge
 
+
 def run_decoding(num_epochs, network, data_dir, save_dir, trial_num, train_fraction=0.8):
     chance_rate = 0.5
-    title_networks = {"LSTM-LN":"LSTM", "RNN-LN-FW":"Fast Weights", "RNN-LN":"RNN", "DNC":"DNC"}
+    title_networks = {"LSTM-LN": "LSTM", "RNN-LN-FW": "Fast Weights", "RNN-LN": "RNN", "DNC": "DNC"}
     title_network = title_networks[network]
     test_filename = "test_analyze.npz"
 
@@ -182,7 +181,7 @@ def run_decoding(num_epochs, network, data_dir, save_dir, trial_num, train_fract
         memory_histories = np.load(os.path.join(data_dir, 'memory_histories_%s_%depochs_trial%d_%s' % (network, num_epochs, trial_num, test_filename)))['arr_0']
     batch_embeddings = np.load(os.path.join(data_dir, 'batch_embeddings_%s_%depochs_trial%d_%s' % (network, num_epochs, trial_num, test_filename)))['arr_0']
     batch_embeddings = np.unique(batch_embeddings, axis=0)  # Some batch embeddings are repeated because frame words are repeated in each example.
-    with open(os.path.join(data_dir, ('test_analysis_results_%s_%depochs_trial%d_%s' % (network, num_epochs, trial_num, test_filename))).replace("npz","p"), 'rb') as f:
+    with open(os.path.join(data_dir, ('test_analysis_results_%s_%depochs_trial%d_%s' % (network, num_epochs, trial_num, test_filename))).replace("npz", "p"), 'rb') as f:
         test_info = pickle.load(f)
     num_examples, num_timesteps, _ = input_vectors.shape
     all_indices = range(num_examples)
@@ -236,7 +235,7 @@ def run_decoding(num_epochs, network, data_dir, save_dir, trial_num, train_fract
         if xticklabel in color_dict.keys():
             xtick.set_color(color_dict[xticklabel])
     plt.grid(color='grey', linestyle='-', linewidth=1, alpha=0.5)
-    plt.ylim([0,1])
+    plt.ylim([0, 1])
     plt.ylabel("Hidden State", fontsize=AXIS_FONTSIZE)
     plt.savefig(os.path.join(save_dir, ("experiment_variable_filler_trial%d_%depochs_%s_ranking_trial%d" % (trial_num, num_epochs, network, trial_num))), bbox_inches='tight')
     plt.close()
@@ -244,7 +243,7 @@ def run_decoding(num_epochs, network, data_dir, save_dir, trial_num, train_fract
 
 def run_decoding_trial_averaged(num_epochs, network, data_dir, save_dir, trial_nums, train_fraction=0.8):
     chance_rate = 0.5
-    title_networks = {"LSTM-LN":"LSTM", "RNN-LN-FW":"Fast Weights", "RNN-LN":"RNN", "DNC":"DNC"}
+    title_networks = {"LSTM-LN": "LSTM", "RNN-LN-FW": "Fast Weights", "RNN-LN": "RNN", "DNC": "DNC"}
     title_network = title_networks[network]
     test_filename = "test_analyze.npz"
 
@@ -260,7 +259,7 @@ def run_decoding_trial_averaged(num_epochs, network, data_dir, save_dir, trial_n
             memory_histories = np.load(os.path.join(data_dir, 'memory_histories_%s_%depochs_trial%d_%s' % (network, num_epochs, trial_num, test_filename)))['arr_0']
         batch_embeddings = np.load(os.path.join(data_dir, 'batch_embeddings_%s_%depochs_trial%d_%s' % (network, num_epochs, trial_num, test_filename)))['arr_0']
         batch_embeddings = np.unique(batch_embeddings, axis=0)  # Some batch embeddings are repeated because frame words are repeated in each example.
-        with open(os.path.join(data_dir, ('test_analysis_results_%s_%depochs_trial%d_%s' % (network, num_epochs, trial_num, test_filename))).replace("npz","p"), 'rb') as f:
+        with open(os.path.join(data_dir, ('test_analysis_results_%s_%depochs_trial%d_%s' % (network, num_epochs, trial_num, test_filename))).replace("npz", "p"), 'rb') as f:
             test_info = pickle.load(f)
         num_examples, num_timesteps, _ = input_vectors.shape
         all_indices = range(num_examples)
@@ -324,10 +323,11 @@ def run_decoding_trial_averaged(num_epochs, network, data_dir, save_dir, trial_n
         if xticklabel in color_dict.keys():
             xtick.set_color(color_dict[xticklabel])
     plt.grid(color='grey', linestyle='-', linewidth=1, alpha=0.5)
-    plt.ylim([0,1])
+    plt.ylim([0, 1])
     plt.ylabel("Hidden State", fontsize=AXIS_FONTSIZE)
     plt.savefig(os.path.join(save_dir, ("experiment_variable_filler_%depochs_%s_ranking_trial_average" % (num_epochs, network))), bbox_inches='tight')
     plt.close()
+
 
 if __name__ == '__main__':
     # Experiment: Subject, AllQs, etc.

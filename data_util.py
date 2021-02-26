@@ -4,6 +4,7 @@ import embedding_util
 
 from hard_coded_things import experiment_parameters, embedding_size
 
+
 def generate_epoch(X, y, num_epochs, FLAGS, embedding, do_shift_inputs=True, noise_proportion=0.1, zero_vector_noise=False):
     """Generate a train epoch.
 
@@ -19,6 +20,7 @@ def generate_epoch(X, y, num_epochs, FLAGS, embedding, do_shift_inputs=True, noi
     """
     for epoch_num in range(num_epochs):
         yield generate_batch(X, y, FLAGS, embedding, do_shift_inputs=do_shift_inputs, noise_proportion=noise_proportion, zero_vector_noise=zero_vector_noise)
+
 
 def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True, noise_proportion=0.1, zero_vector_noise=False):
     """Generate a train batch.
@@ -46,7 +48,7 @@ def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True, noise_proportio
             embedding: [num_words_in_corpus x num_dimensions_per_word] matrix
                        of vectors representing words in the batch.
     """
-    num_classes, batch_size, filler_type = FLAGS.num_classes, FLAGS.batch_size, FLAGS.filler_type
+    batch_size, filler_type = FLAGS.batch_size, FLAGS.filler_type
     data_size = len(X)
     num_batches = (data_size // batch_size)
     for batch_num in range(num_batches):
@@ -68,7 +70,7 @@ def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True, noise_proportio
             else:
                 filler_indices = experiment_parameters["filler_indices"][FLAGS.experiment_name]
             batchX, batchy = X[start_index:end_index].squeeze(), y[start_index:end_index].squeeze()
-            if FLAGS.function != "analyze" and do_shift_inputs: # Don't randomly shift inputs for decoding analysis.
+            if FLAGS.function != "analyze" and do_shift_inputs:  # Don't randomly shift inputs for decoding analysis.
                 batchX = shift_inputs(batchX, FLAGS.experiment_name)
             embeddingX, embeddingy = embedding[batchX], embedding[batchy]
             padding_index = experiment_parameters['padding_indices'][FLAGS.experiment_name]
@@ -79,29 +81,28 @@ def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True, noise_proportio
                 num_fillers = len(filler_indices)
                 new_filler_embedding = np.empty((num_fillers, embedding_size))
                 if "distributions" in filler_type:
-                    subject_distribution = None
                     for j, filler_distribution in enumerate(filler_distributions):
-                        if "variable_filler_distributions_no_subtract" in filler_type: 
-                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="C")
+                        if "variable_filler_distributions_no_subtract" in filler_type:
+                            new_filler_embedding[j, :] = embedding_util.create_word_vector(filler_distribution="C")
                         elif "variable_filler_distributions_one_distribution" in filler_type:
-                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=filler_distribution, dominant_distribution_proportion=1)
+                            new_filler_embedding[j, :] = embedding_util.create_word_vector(filler_distribution=filler_distribution, dominant_distribution_proportion=1)
                         elif "variable_filler_distributions_all_randn_distribution" in filler_type:
-                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="randn")
+                            new_filler_embedding[j, :] = embedding_util.create_word_vector(filler_distribution="randn")
                         elif "variable_filler_distributions_A" in filler_type:
-                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="A", dominant_distribution_proportion=1)
+                            new_filler_embedding[j, :] = embedding_util.create_word_vector(filler_distribution="A", dominant_distribution_proportion=1)
                         elif "variable_filler_distributions_B" in filler_type:
-                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="B", dominant_distribution_proportion=1)
+                            new_filler_embedding[j, :] = embedding_util.create_word_vector(filler_distribution="B", dominant_distribution_proportion=1)
                         elif "variable_filler_distributions_5050_AB" in filler_type:
-                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution="B", dominant_distribution_proportion=0.5)
+                            new_filler_embedding[j, :] = embedding_util.create_word_vector(filler_distribution="B", dominant_distribution_proportion=0.5)
                         else:
-                            new_filler_embedding[j,:] = embedding_util.create_word_vector(filler_distribution=filler_distribution)
+                            new_filler_embedding[j, :] = embedding_util.create_word_vector(filler_distribution=filler_distribution)
                 else:
                     for j in range(num_fillers):
-                        new_filler_embedding[j,:] = embedding_util.create_word_vector()
+                        new_filler_embedding[j, :] = embedding_util.create_word_vector()
                 # Replace filler embedding with new random embedding.
                 filler_ix_X = np.where(np.isin(batchX[examplenum], filler_indices))
-                new_embedding_ix_X = [filler_indices.index(i) for i in batchX[examplenum,filler_ix_X][0]]
-                embeddingX[examplenum,filler_ix_X] = new_filler_embedding[new_embedding_ix_X]
+                new_embedding_ix_X = [filler_indices.index(i) for i in batchX[examplenum, filler_ix_X][0]]
+                embeddingX[examplenum, filler_ix_X] = new_filler_embedding[new_embedding_ix_X]
                 if "noise" in filler_type:
                     if np.random.rand() < noise_proportion:
                         print('noise trial')
@@ -118,10 +119,10 @@ def generate_batch(X, y, FLAGS, embedding, do_shift_inputs=True, noise_proportio
                 epoch_embedding = np.concatenate((epoch_embedding, new_filler_embedding), axis=0)
             yield embeddingX, embeddingy, epoch_embedding
 
+
 def shift_inputs(batchX, experiment_name, return_padding_location=False):
     # NOTE: Padding indices manually determined using word list saved by experiment creators.
     padding_index = experiment_parameters['padding_indices'][experiment_name]
-    batch_size = batchX.shape[0]
     new_X = np.zeros(batchX.shape, dtype=np.int16)
     for i in range(len(batchX)):
         original_Xi = batchX[i]
@@ -130,8 +131,8 @@ def shift_inputs(batchX, experiment_name, return_padding_location=False):
         padding_location = np.random.choice(range(first_padding_index))
         new_Xi[:padding_location] = original_Xi[:padding_location]
         new_Xi[padding_location] = padding_index
-        new_Xi[padding_location+1:first_padding_index+1] = original_Xi[padding_location:first_padding_index]
-        new_Xi[first_padding_index+1:] = original_Xi[first_padding_index+1:]
+        new_Xi[padding_location + 1:first_padding_index + 1] = original_Xi[padding_location:first_padding_index]
+        new_Xi[first_padding_index + 1:] = original_Xi[first_padding_index + 1:]
         new_X[i] = new_Xi
     if return_padding_location:
         return new_X, padding_location
